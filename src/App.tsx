@@ -16,7 +16,26 @@ import Receivables from "./pages/Receivables";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Cache "fresco" por 5 min: navegar entre páginas não re-busca tudo.
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      // Não refazer todas as requests só por focar a aba.
+      refetchOnWindowFocus: false,
+      // Retry inteligente: NÃO re-tentar erros 4xx do gateway (tabela vazia/
+      // não provisionada, auth) — eram eles que causavam o backoff de ~7s por
+      // query quando o tenant não tinha dados. Só re-tenta falhas transitórias.
+      retry: (failureCount, error) => {
+        const msg = error instanceof Error ? error.message : '';
+        if (/→ 4\d\d:/.test(msg)) return false;
+        return failureCount < 1;
+      },
+      retryDelay: 400,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
