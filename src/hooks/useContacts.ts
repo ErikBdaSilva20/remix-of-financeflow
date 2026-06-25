@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { listContacts, createContact as apiCreate, updateContact as apiUpdate, removeContact } from "@/lib/data/contacts.repo";
+import { createContact as apiCreate, updateContact as apiUpdate, removeContact } from "@/lib/data/contacts.repo";
 import type { Contact, ContactInsert, ContactUpdate } from "@/lib/data/contacts.repo";
+import { fetchTable } from "./tableCache";
 
 export type { Contact };
 export type ContactInput = ContactInsert;
@@ -12,7 +13,7 @@ export function useContacts() {
   const { data: contacts = [], isLoading, error } = useQuery({
     queryKey: ["contacts"],
     queryFn: async () => {
-      const rows = await listContacts();
+      const rows = await fetchTable<Contact>('contacts');
       return rows.sort((a, b) => a.name.localeCompare(b.name));
     },
   });

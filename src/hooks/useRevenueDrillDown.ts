@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 
@@ -17,8 +17,8 @@ export function useRevenueDrillDown(params: RevenueDrillDownParams | null) {
       if (!params) return [];
 
       const [invoices, customers] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<Customer>('customers').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<Customer>('customers'),
       ]);
 
       const customerMap = new Map(customers.map(c => [c.id, c]));

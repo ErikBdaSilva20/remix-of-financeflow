@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRevenueSources, useExpenseCategories, useFinancialMetrics } from "./useFinancialData";
 import { useAccountingSettings } from "./useAccountingSettings";
-import { listFxRates } from "@/lib/data/fx_rates.repo";
-import { listInvoices } from "@/lib/data/invoices.repo";
-import { listExpensesNew } from "@/lib/data/expenses_new.repo";
+import { fetchTable } from "./tableCache";
+import type { FxRate } from "@/lib/data/fx_rates.repo";
+import type { Invoice } from "@/lib/data/invoices.repo";
+import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 
 export interface ProfitabilityMetrics {
@@ -210,9 +211,9 @@ export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date;
       const endStr = endDate.toISOString().split('T')[0];
 
       const [fxRates, allInvoices, allExpenses] = await Promise.all([
-        listFxRates(),
-        listInvoices(),
-        listExpensesNew(),
+        fetchTable<FxRate>('fx_rates'),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<ExpenseNew>('expenses_new'),
       ]);
 
       // Build FX lookup map by currency and date

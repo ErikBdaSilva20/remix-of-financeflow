@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 import type { Payment } from "@/lib/data/payments.repo";
@@ -98,7 +98,7 @@ export function useFinancialMetrics(dateRange?: { from?: Date; to?: Date }) {
     queryFn: async () => {
       const today = new Date();
       const dr = dateRange ?? { from: startOfMonth(subMonths(today, 12)), to: endOfMonth(today) };
-      const invoices = await db.table<Invoice>('invoices').list();
+      const invoices = await fetchTable<Invoice>('invoices');
       const filtered = filterByDateRange(invoices, 'issue_date', dr);
 
       const monthlyTotals: Record<string, number> = {};
@@ -131,7 +131,7 @@ export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _curre
   return useQuery({
     queryKey: ["revenue-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const invoices = await db.table<Invoice>('invoices').list();
+      const invoices = await fetchTable<Invoice>('invoices');
       const filtered = filterByDateRange(invoices, 'issue_date', dateRange);
 
       const grouped: Record<string, number> = {};
@@ -157,7 +157,7 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
   return useQuery({
     queryKey: ["expense-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const expenses = await db.table<ExpenseNew>('expenses_new').list();
+      const expenses = await fetchTable<ExpenseNew>('expenses_new');
       const filtered = filterByDateRange(expenses, 'date', dateRange);
 
       const grouped: Record<string, number> = {};
@@ -184,7 +184,7 @@ export function useExpenseTrends(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["expense-trends", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const expenses = await db.table<ExpenseNew>('expenses_new').list();
+      const expenses = await fetchTable<ExpenseNew>('expenses_new');
       const filtered = filterByDateRange(expenses, 'date', dateRange);
       if (filtered.length === 0) return [];
 
@@ -214,8 +214,8 @@ export function useRevenueTrends(dateRange?: { from?: Date; to?: Date }) {
     queryKey: ["revenue-trends", dateRange?.from, dateRange?.to],
     queryFn: async () => {
       const [invoices, payments] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<Payment>('payments').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<Payment>('payments'),
       ]);
       const filteredInv = filterByDateRange(invoices, 'issue_date', dateRange);
       const filteredPmt = filterByDateRange(payments, 'date', dateRange);
@@ -261,8 +261,8 @@ export function useTopClients() {
     queryKey: ["top-clients"],
     queryFn: async () => {
       const [invoices, customers] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<Customer>('customers').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<Customer>('customers'),
       ]);
       const customerMap = new Map(customers.map(c => [c.id, c.name]));
       const grouped: Record<string, number> = {};
@@ -281,7 +281,7 @@ export function useVendors(_dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["vendors"],
     queryFn: async () => {
-      const bills = await db.table<VendorBill>('vendor_bills').list();
+      const bills = await fetchTable<VendorBill>('vendor_bills');
       const grouped: Record<string, { name: string; category: string; amount: number }> = {};
       bills.forEach(b => {
         if (!grouped[b.vendor_name]) grouped[b.vendor_name] = { name: b.vendor_name, category: b.category || 'Other', amount: 0 };

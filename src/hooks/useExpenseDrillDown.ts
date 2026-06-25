@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 
 export interface ExpenseDrillDownData {
@@ -22,7 +22,7 @@ export function useExpenseDrillDown(dateRange?: { from?: Date; to?: Date }) {
     queryKey: ["expense-drill-down", drillDownRequest, dateRange?.from, dateRange?.to],
     queryFn: async () => {
       if (!drillDownRequest) return null;
-      const expenses = await db.table<ExpenseNew>('expenses_new').list();
+      const expenses = await fetchTable<ExpenseNew>('expenses_new');
 
       let filtered: ExpenseNew[];
       if (drillDownRequest.type === "category") {

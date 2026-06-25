@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 
 interface DimensionData {
@@ -19,7 +19,7 @@ export function useRevenueDimensions(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["revenue-dimensions", dateRange?.from, dateRange?.to],
     queryFn: async (): Promise<RevenueDimensionsResult> => {
-      const invoices = await db.table<Invoice>('invoices').list();
+      const invoices = await fetchTable<Invoice>('invoices');
 
       const fromStr = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
       const toStr = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : null;

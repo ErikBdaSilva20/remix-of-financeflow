@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 import { DrillDownData } from "@/components/ProfitabilityDataTable";
@@ -20,8 +20,8 @@ export function useProfitabilityDrillDown() {
       if (!drillDownRequest) return null;
 
       const [invoices, expenses] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<ExpenseNew>('expenses_new').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<ExpenseNew>('expenses_new'),
       ]);
 
       let transactionData: any[] = [];

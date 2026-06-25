@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { db } from '@/lib/data/client';
+import { fetchTable } from './tableCache';
 import type { Invoice } from '@/lib/data/invoices.repo';
 import type { Customer } from '@/lib/data/customers.repo';
 import type { Contact } from '@/lib/data/contacts.repo';
@@ -26,10 +26,10 @@ export const useGlobalSearch = (searchQuery: string) => {
 
       const q = searchQuery.toLowerCase().trim();
       const [invoices, customers, contacts, payments] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<Customer>('customers').list(),
-        db.table<Contact>('contacts').list(),
-        db.table<Payment>('payments').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<Customer>('customers'),
+        fetchTable<Contact>('contacts'),
+        fetchTable<Payment>('payments'),
       ]);
 
       const custMap = new Map(customers.map(c => [c.id, c.name]));

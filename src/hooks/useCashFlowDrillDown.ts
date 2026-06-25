@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { BankTransaction } from "@/lib/data/bank_transactions.repo";
 
 export interface CashFlowDrillDownData {
@@ -28,7 +28,7 @@ export function useCashFlowDrillDown() {
         startDate = endDate = drillDownRequest.dateKey;
       }
 
-      const all = await db.table<BankTransaction>('bank_transactions').list();
+      const all = await fetchTable<BankTransaction>('bank_transactions');
       const filtered = all.filter(t => t.date >= startDate && t.date <= endDate)
         .sort((a, b) => b.date.localeCompare(a.date));
 

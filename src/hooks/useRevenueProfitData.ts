@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 
@@ -16,8 +16,8 @@ export function useRevenueProfitData(dateRange?: { from?: Date; to?: Date }) {
     queryKey: ["revenue-profit-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
       const [invoices, expenses] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<ExpenseNew>('expenses_new').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<ExpenseNew>('expenses_new'),
       ]);
 
       const fromStr = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : null;

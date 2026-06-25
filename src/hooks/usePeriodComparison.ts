@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format, subMonths, subQuarters, subYears, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from "date-fns";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 
@@ -25,8 +25,8 @@ export function usePeriodComparison(period: TimePeriod) {
 
       const fd = (d: Date) => format(d, 'yyyy-MM-dd');
       const [invoices, expenses] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<ExpenseNew>('expenses_new').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<ExpenseNew>('expenses_new'),
       ]);
 
       const sumInv = (s: string, e: string) => invoices.filter(i => i.issue_date >= s && i.issue_date <= e).reduce((a, i) => a + i.amount_total, 0);

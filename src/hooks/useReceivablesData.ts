@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { db } from "@/lib/data/client";
+import { fetchTable } from "./tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { Payment } from "@/lib/data/payments.repo";
 import type { Customer } from "@/lib/data/customers.repo";
@@ -15,7 +15,7 @@ export function useARData(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["ar-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const invoices = await db.table<Invoice>('invoices').list();
+      const invoices = await fetchTable<Invoice>('invoices');
       const today = new Date(); today.setHours(0,0,0,0);
 
       let filtered = invoices.filter(i => AR_OPEN.includes(i.status));
@@ -43,7 +43,7 @@ export function useAPData(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["ap-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const bills = await db.table<VendorBill>('vendor_bills').list();
+      const bills = await fetchTable<VendorBill>('vendor_bills');
       const today = new Date(); today.setHours(0,0,0,0);
 
       let filtered = bills.filter(b => ['Open','Pending','Overdue','Partial','Partially Paid'].includes(b.status));
@@ -73,7 +73,7 @@ export function useDSO() {
   return useQuery({
     queryKey: ["dso"],
     queryFn: async () => {
-      const invoices = await db.table<Invoice>('invoices').list();
+      const invoices = await fetchTable<Invoice>('invoices');
       const endDate = new Date(); const startDate = new Date(); startDate.setDate(startDate.getDate() - 90);
       const startStr = format(startDate, 'yyyy-MM-dd'); const endStr = format(endDate, 'yyyy-MM-dd');
       const periodInv = invoices.filter(i => i.issue_date >= startStr && i.issue_date <= endStr);
@@ -90,9 +90,9 @@ export function useRecentActivity() {
     queryKey: ['recent-activity'],
     queryFn: async () => {
       const [invoices, payments, customers] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<Payment>('payments').list(),
-        db.table<Customer>('customers').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<Payment>('payments'),
+        fetchTable<Customer>('customers'),
       ]);
       const custMap = new Map(customers.map(c => [c.id, c.name]));
       const activities = [
@@ -117,8 +117,8 @@ export function useARDetailedData(dateRange?: { from?: Date; to?: Date }, sortBy
     queryKey: ['ar-detailed', dateRange?.from, dateRange?.to, sortBy, page, pageSize],
     queryFn: async () => {
       const [invoices, customers] = await Promise.all([
-        db.table<Invoice>('invoices').list(),
-        db.table<Customer>('customers').list(),
+        fetchTable<Invoice>('invoices'),
+        fetchTable<Customer>('customers'),
       ]);
       const custMap = new Map(customers.map(c => [c.id, c.name]));
       const today = new Date();
@@ -154,7 +154,7 @@ export function useAPDetailedData(dateRange?: { from?: Date; to?: Date }, sortBy
   return useQuery({
     queryKey: ['ap-detailed', dateRange?.from, dateRange?.to, sortBy],
     queryFn: async () => {
-      const bills = await db.table<VendorBill>('vendor_bills').list();
+      const bills = await fetchTable<VendorBill>('vendor_bills');
       const today = new Date();
       let filtered = bills.filter(b => ['Open','Partial','Partially Paid'].includes(b.status));
       if (dateRange?.from) { const f = format(dateRange.from, 'yyyy-MM-dd'); filtered = filtered.filter(b => b.issue_date >= f); }
