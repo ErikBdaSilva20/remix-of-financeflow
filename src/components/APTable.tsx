@@ -29,36 +29,69 @@ export function APTable({ data, formatCurrency }: APTableProps) {
     return variants[status] || "default";
   };
 
+  const statusLabelsPt: Record<string, string> = {
+    Open: "Aberto",
+    Partial: "Parcial",
+    Paid: "Pago",
+    Overdue: "Atrasado",
+  };
+
   const getUrgencyBadge = (daysUntilDue: number) => {
-    if (daysUntilDue < 0) return { variant: "destructive" as const, label: "Overdue" };
-    if (daysUntilDue <= 7) return { variant: "destructive" as const, label: "Due Soon" };
-    if (daysUntilDue <= 30) return { variant: "secondary" as const, label: "Current" };
-    return { variant: "default" as const, label: "Future" };
+    if (daysUntilDue < 0) return { variant: "destructive" as const, label: "Vencido" };
+    if (daysUntilDue <= 7) return { variant: "destructive" as const, label: "Vence Logo" };
+    if (daysUntilDue <= 30) return { variant: "secondary" as const, label: "No Prazo" };
+    return { variant: "default" as const, label: "Futuro" };
   };
 
   if (data.length === 0) {
     return (
       <Card className="p-6">
-        <p className="text-center text-muted-foreground">No open vendor bills found</p>
+        <p className="text-center text-muted-foreground">Nenhuma conta de fornecedor aberta encontrada</p>
       </Card>
     );
   }
 
   return (
     <Card>
-      <div className="overflow-x-auto">
+      {/* Mobile card view */}
+      <div className="sm:hidden divide-y divide-border">
+        {data.map((bill) => {
+          const urgency = getUrgencyBadge(bill.daysUntilDue);
+          return (
+            <div key={bill.id} className="p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-sm">{bill.billNumber}</span>
+                <Badge variant={urgency.variant} className="text-xs">{urgency.label}</Badge>
+              </div>
+              <div className="text-sm font-medium truncate">{bill.vendor}</div>
+              {bill.category && <div className="text-xs text-muted-foreground">{bill.category}</div>}
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Emissão: {new Date(bill.issueDate).toLocaleDateString('pt-BR')}</span>
+                <span>Venc.: {new Date(bill.dueDate).toLocaleDateString('pt-BR')}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <Badge variant={getStatusBadge(bill.status)} className="text-xs">{statusLabelsPt[bill.status] || bill.status}</Badge>
+                <span className="font-bold text-sm">{formatCurrency(bill.amount, bill.currency, bill.issueDate)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden sm:block overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Bill #</TableHead>
-              <TableHead>Vendor</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Issue Date</TableHead>
-              <TableHead>Due Date</TableHead>
+              <TableHead>Nº da Conta</TableHead>
+              <TableHead>Fornecedor</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Data de Emissão</TableHead>
+              <TableHead>Data de Vencimento</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Urgency</TableHead>
-              <TableHead className="text-right">Days Until Due</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Urgência</TableHead>
+              <TableHead className="text-right">Dias Até Vencer</TableHead>
+              <TableHead className="text-right">Valor</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -72,13 +105,13 @@ export function APTable({ data, formatCurrency }: APTableProps) {
                   <TableCell>{new Date(bill.issueDate).toLocaleDateString()}</TableCell>
                   <TableCell>{new Date(bill.dueDate).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadge(bill.status)}>{bill.status}</Badge>
+                    <Badge variant={getStatusBadge(bill.status)}>{statusLabelsPt[bill.status] || bill.status}</Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={urgency.variant}>{urgency.label}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {bill.daysUntilDue < 0 ? `${Math.abs(bill.daysUntilDue)} days` : bill.daysUntilDue}
+                    {bill.daysUntilDue < 0 ? `${Math.abs(bill.daysUntilDue)} dias` : bill.daysUntilDue}
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(bill.amount, bill.currency, bill.issueDate)}

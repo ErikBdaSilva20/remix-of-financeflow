@@ -1,0 +1,47 @@
+{
+  "id": "financeflow",
+  "name": "FinanceFlow",
+  "description": "Dashboard financeiro completo — receitas, despesas, rentabilidade, fluxo de caixa e contas a receber/pagar.",
+  "version": "1.0.0",
+  "engine": "vite-react-gateway",
+  "schemaVersion": 1,
+  "migrations": ["0001_business_schema.sql"],
+  "auth": {
+    "provider": "better-auth",
+    "roles": ["admin", "manager", "rep"]
+  },
+  "screens": [
+    { "id": "overview",       "route": "/",             "title": "Overview",       "file": "src/pages/Overview" },
+    { "id": "revenue",        "route": "/revenue",      "title": "Revenue",        "file": "src/pages/Revenue" },
+    { "id": "expenses",       "route": "/expenses",     "title": "Expenses",       "file": "src/pages/Expenses" },
+    { "id": "profitability",  "route": "/profitability","title": "Profitability",  "file": "src/pages/Profitability" },
+    { "id": "cash-flow",      "route": "/cash-flow",    "title": "Cash Flow",      "file": "src/pages/CashFlow" },
+    { "id": "receivables",    "route": "/receivables",  "title": "Receivables",    "file": "src/pages/Receivables" },
+    { "id": "reports",        "route": "/reports",      "title": "Reports",        "file": "src/pages/Reports" }
+  ],
+  "editable": {
+    "allow": [
+      "src/pages/**",
+      "src/components/**",
+      "src/hooks/**",
+      "src/lib/data/*.repo.ts",
+      "src/lib/currencySymbols.ts",
+      "src/App.css"
+    ],
+    "protect": [
+      "src/lib/data/client.ts",
+      "src/lib/data/types.gen.ts",
+      "src/lib/data/preview-fixtures.ts",
+      "src/lib/utils.ts",
+      "src/components/ui/**",
+      "src/main.tsx",
+      "vite.config.ts",
+      "components.json",
+      "supabase/migrations/**"
+    ]
+  },
+  "composio": {
+    "toolkits": []
+  },
+  "envContract": ["VITE_GATEWAY_URL"]
+}

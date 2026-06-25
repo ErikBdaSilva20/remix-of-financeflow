@@ -1,6 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, CartesianGrid } from 'recharts';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 interface RevenueProfitChartProps {
   data: Array<{
@@ -13,16 +22,20 @@ interface RevenueProfitChartProps {
   onPointClick?: (dateKey: string) => void;
 }
 
-export function RevenueProfitChart({ data, formatCurrency, onPointClick }: RevenueProfitChartProps) {
+export function RevenueProfitChart({
+  data,
+  formatCurrency,
+  onPointClick,
+}: RevenueProfitChartProps) {
   if (!data || data.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Revenue vs Profit</CardTitle>
+          <CardTitle className="text-lg">Receita vs. Lucro</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-80">
-            <Badge variant="secondary">No Data</Badge>
+            <Badge variant="secondary">Sem dados disponíveis</Badge>
           </div>
         </CardContent>
       </Card>
@@ -32,24 +45,21 @@ export function RevenueProfitChart({ data, formatCurrency, onPointClick }: Reven
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Revenue vs Profit</CardTitle>
+        <CardTitle className="text-lg">Receita vs. Lucro</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={data} 
-              margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
-              <XAxis 
+            <LineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" opacity={0.3} />
+              <XAxis
                 dataKey="period"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12 }}
                 className="fill-muted-foreground"
               />
-              <YAxis 
+              <YAxis
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, dx: -10 }}
@@ -57,44 +67,44 @@ export function RevenueProfitChart({ data, formatCurrency, onPointClick }: Reven
                 tickFormatter={(value) => formatCurrency(value)}
                 width={90}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: any) => [formatCurrency(value), '']}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
+                labelStyle={{ color: '#0F172A' }}
                 contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '8px'
+                  backgroundColor: '#F0FDF4',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
                 }}
               />
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
-              <Line 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="hsl(var(--primary-500))" 
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#059669"
                 strokeWidth={3}
-                dot={{ fill: 'hsl(var(--primary-500))', strokeWidth: 2, r: 4, cursor: 'pointer' }}
+                dot={{ fill: '#059669', strokeWidth: 2, r: 4, cursor: 'pointer' }}
                 name="Revenue"
-                activeDot={{ 
-                  r: 6, 
-                  stroke: 'hsl(var(--primary-500))', 
+                activeDot={{
+                  r: 6,
+                  stroke: '#059669',
                   strokeWidth: 2,
                   cursor: 'pointer',
-                  onClick: (_: any, payload: any) => onPointClick?.(payload.payload.dateKey)
+                  onClick: (_: any, payload: any) => onPointClick?.(payload.payload.dateKey),
                 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="profit" 
-                stroke="hsl(var(--success-500))" 
+              <Line
+                type="monotone"
+                dataKey="profit"
+                stroke="#047857"
                 strokeWidth={3}
-                dot={{ fill: 'hsl(var(--success-500))', strokeWidth: 2, r: 4, cursor: 'pointer' }}
+                dot={{ fill: '#047857', strokeWidth: 2, r: 4, cursor: 'pointer' }}
                 name="Profit"
-                activeDot={{ 
-                  r: 6, 
-                  stroke: 'hsl(var(--success-500))', 
+                activeDot={{
+                  r: 6,
+                  stroke: '#047857',
                   strokeWidth: 2,
                   cursor: 'pointer',
-                  onClick: (_: any, payload: any) => onPointClick?.(payload.payload.dateKey)
+                  onClick: (_: any, payload: any) => onPointClick?.(payload.payload.dateKey),
                 }}
               />
             </LineChart>

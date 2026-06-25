@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/data/client";
+import type { Invoice } from "@/lib/data/invoices.repo";
+import type { Customer } from "@/lib/data/customers.repo";
 
 interface RevenueDrillDownParams {
   startDate: string;
@@ -14,45 +16,28 @@ export function useRevenueDrillDown(params: RevenueDrillDownParams | null) {
     queryFn: async () => {
       if (!params) return [];
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .single();
+      const [invoices, customers] = await Promise.all([
+        db.table<Invoice>('invoices').list(),
+        db.table<Customer>('customers').list(),
+      ]);
 
-      if (!profile?.company_id) throw new Error("No company found");
+      const customerMap = new Map(customers.map(c => [c.id, c]));
 
-      // Build the query for invoices
-      let query = supabase
-        .from("invoices")
-        .select(`
-          *,
-          customers (
-            name,
-            email,
-            country
-          )
-        `)
-        .eq("company_id", profile.company_id)
-        .gte("issue_date", params.startDate)
-        .lte("issue_date", params.endDate)
-        .order("issue_date", { ascending: false });
+      let filtered = invoices.filter(inv =>
+        inv.issue_date >= params.startDate && inv.issue_date <= params.endDate
+      );
 
-      // Apply category filter if provided
       if (params.category && params.categoryType) {
-        if (params.categoryType === "product") {
-          query = query.eq("product_id", params.category);
-        } else if (params.categoryType === "region") {
-          query = query.eq("region", params.category);
-        } else if (params.categoryType === "channel") {
-          query = query.eq("channel", params.category);
-        }
+        if (params.categoryType === "product") filtered = filtered.filter(i => i.product_id === params.category);
+        else if (params.categoryType === "channel") filtered = filtered.filter(i => i.channel === params.category);
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return data || [];
+      return filtered
+        .sort((a, b) => b.issue_date.localeCompare(a.issue_date))
+        .map(inv => ({
+          ...inv,
+          customers: customerMap.get(inv.customer_id ?? '') ?? null,
+        }));
     },
     enabled: !!params,
   });

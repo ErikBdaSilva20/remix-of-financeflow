@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { db } from "@/lib/data/client";
+import type { Invoice } from "@/lib/data/invoices.repo";
+import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 
 export interface RevenueProfitData {
   period: string;
@@ -13,116 +15,57 @@ export function useRevenueProfitData(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["revenue-profit-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .single();
-
-      if (!profile?.company_id) throw new Error("No company found");
-
-      // Build queries for revenue (from invoices) and expenses (from expenses_new)
-      let revenueQuery = supabase
-        .from("invoices")
-        .select("issue_date, amount_total, amount_total_base")
-        .eq("company_id", profile.company_id)
-        .order("issue_date");
-
-      let expensesQuery = supabase
-        .from("expenses_new")
-        .select("date, amount, amount_base")
-        .eq("company_id", profile.company_id)
-        .order("date");
-
-      // Apply date filters if provided
-      if (dateRange?.from) {
-        const fromDate = format(dateRange.from, 'yyyy-MM-dd');
-        revenueQuery = revenueQuery.gte("issue_date", fromDate);
-        expensesQuery = expensesQuery.gte("date", fromDate);
-      }
-      if (dateRange?.to) {
-        const toDate = format(dateRange.to, 'yyyy-MM-dd');
-        revenueQuery = revenueQuery.lte("issue_date", toDate);
-        expensesQuery = expensesQuery.lte("date", toDate);
-      }
-
-      const [revenueResult, expensesResult] = await Promise.all([
-        revenueQuery,
-        expensesQuery
+      const [invoices, expenses] = await Promise.all([
+        db.table<Invoice>('invoices').list(),
+        db.table<ExpenseNew>('expenses_new').list(),
       ]);
 
-      if (revenueResult.error) throw revenueResult.error;
-      if (expensesResult.error) throw expensesResult.error;
+      const fromStr = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
+      const toStr = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
 
-      const revenueData = revenueResult.data || [];
-      const expensesData = expensesResult.data || [];
+      const filteredInv = invoices.filter(i => {
+        if (fromStr && i.issue_date < fromStr) return false;
+        if (toStr && i.issue_date > toStr) return false;
+        return true;
+      });
+      const filteredExp = expenses.filter(e => {
+        if (fromStr && e.date < fromStr) return false;
+        if (toStr && e.date > toStr) return false;
+        return true;
+      });
 
-      if (revenueData.length === 0 && expensesData.length === 0) {
-        return [];
-      }
+      if (filteredInv.length === 0 && filteredExp.length === 0) return [];
 
-      // Determine granularity based on date range
-      const dateRangeDays = dateRange?.from && dateRange?.to 
-        ? Math.abs((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24))
-        : revenueData.length > 0 
-          ? Math.abs((new Date(revenueData[revenueData.length - 1].issue_date).getTime() - new Date(revenueData[0].issue_date).getTime()) / (1000 * 60 * 60 * 24))
-          : 0;
-      
-      const useDailyGranularity = dateRangeDays <= 30;
+      const allDates = [...filteredInv.map(i => i.issue_date), ...filteredExp.map(e => e.date)].sort();
+      const rangeDays = allDates.length > 1
+        ? Math.abs((new Date(allDates[allDates.length - 1]).getTime() - new Date(allDates[0]).getTime()) / 86400000)
+        : 0;
+      const daily = rangeDays <= 30;
 
-      // Aggregate revenue by day or month
       const revenueByPeriod = new Map<string, { dateKey: string; amount: number }>();
-      revenueData.forEach((row) => {
-        const dateObj = new Date(row.issue_date + 'T00:00:00');
-        const displayKey = useDailyGranularity 
-          ? format(dateObj, "MMM dd")
-          : format(dateObj, "MMM yyyy");
-        const dateKey = useDailyGranularity
-          ? format(dateObj, "yyyy-MM-dd")
-          : format(dateObj, "yyyy-MM");
-        if (!revenueByPeriod.has(displayKey)) {
-          revenueByPeriod.set(displayKey, { dateKey, amount: 0 });
-        }
-        const current = revenueByPeriod.get(displayKey)!;
-        const amount = (row.amount_total_base ?? row.amount_total ?? 0) as number;
-        current.amount += amount;
+      filteredInv.forEach(inv => {
+        const d = new Date(inv.issue_date + 'T00:00:00');
+        const label = daily ? format(d, "MMM dd") : format(d, "MMM yyyy");
+        const dateKey = daily ? format(d, "yyyy-MM-dd") : format(d, "yyyy-MM");
+        if (!revenueByPeriod.has(label)) revenueByPeriod.set(label, { dateKey, amount: 0 });
+        revenueByPeriod.get(label)!.amount += inv.amount_total;
       });
 
-      // Aggregate expenses by day or month
-      const expensesByPeriod = new Map<string, number>();
-      expensesData.forEach((row) => {
-        const dateObj = new Date(row.date + 'T00:00:00');
-        const displayKey = useDailyGranularity 
-          ? format(dateObj, "MMM dd")
-          : format(dateObj, "MMM yyyy");
-        
-        if (!expensesByPeriod.has(displayKey)) {
-          expensesByPeriod.set(displayKey, 0);
-        }
-        expensesByPeriod.set(displayKey, expensesByPeriod.get(displayKey)! + (row.amount || 0));
+      const expByPeriod = new Map<string, number>();
+      filteredExp.forEach(exp => {
+        const d = new Date(exp.date + 'T00:00:00');
+        const label = daily ? format(d, "MMM dd") : format(d, "MMM yyyy");
+        expByPeriod.set(label, (expByPeriod.get(label) || 0) + exp.amount);
       });
 
-      // Combine revenue and expenses to calculate profit
-      const allPeriods = new Set([...revenueByPeriod.keys(), ...expensesByPeriod.keys()]);
-      const chartData: RevenueProfitData[] = [];
-
+      const allPeriods = new Set([...revenueByPeriod.keys(), ...expByPeriod.keys()]);
+      const result: RevenueProfitData[] = [];
       allPeriods.forEach(period => {
-        const revenueEntry = revenueByPeriod.get(period);
-        const revenue = revenueEntry?.amount || 0;
-        const expenses = expensesByPeriod.get(period) || 0;
-        const profit = revenue - expenses;
-
-        chartData.push({
-          period,
-          dateKey: revenueEntry?.dateKey || "",
-          revenue,
-          profit
-        });
+        const rev = revenueByPeriod.get(period);
+        result.push({ period, dateKey: rev?.dateKey || '', revenue: rev?.amount || 0, profit: (rev?.amount || 0) - (expByPeriod.get(period) || 0) });
       });
 
-      // Sort by dateKey
-      chartData.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-
-      return chartData;
+      return result.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
     },
   });
 }

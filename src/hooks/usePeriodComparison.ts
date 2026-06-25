@@ -1,136 +1,45 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { format, subMonths, subQuarters, subYears, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from "date-fns";
+import { db } from "@/lib/data/client";
+import type { Invoice } from "@/lib/data/invoices.repo";
+import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 
 export type TimePeriod = 'month' | 'quarter' | 'year';
 
-interface PeriodData {
-  revenue: number;
-  expenses: number;
-  profit: number;
-  cashFlow: number;
-}
-
+interface PeriodData { revenue: number; expenses: number; profit: number; cashFlow: number; }
 interface PeriodComparison {
   current: PeriodData;
   previous: PeriodData;
-  growth: {
-    revenue: number;
-    expenses: number;
-    profit: number;
-    cashFlow: number;
-  };
+  growth: { revenue: number; expenses: number; profit: number; cashFlow: number; };
 }
 
 export function usePeriodComparison(period: TimePeriod) {
   return useQuery({
     queryKey: ["period-comparison", period],
     queryFn: async (): Promise<PeriodComparison> => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .single();
-
-      if (!profile?.company_id) throw new Error("No company found");
-
       const now = new Date();
-      let currentStart: Date, currentEnd: Date, previousStart: Date, previousEnd: Date;
+      let cS: Date, cE: Date, pS: Date, pE: Date;
+      if (period === 'month') { cS = startOfMonth(now); cE = endOfMonth(now); pS = startOfMonth(subMonths(now, 1)); pE = endOfMonth(subMonths(now, 1)); }
+      else if (period === 'quarter') { cS = startOfQuarter(now); cE = endOfQuarter(now); pS = startOfQuarter(subQuarters(now, 1)); pE = endOfQuarter(subQuarters(now, 1)); }
+      else { cS = startOfYear(now); cE = endOfYear(now); pS = startOfYear(subYears(now, 1)); pE = endOfYear(subYears(now, 1)); }
 
-      // Calculate date ranges based on period
-      switch (period) {
-        case 'month':
-          currentStart = startOfMonth(now);
-          currentEnd = endOfMonth(now);
-          previousStart = startOfMonth(subMonths(now, 1));
-          previousEnd = endOfMonth(subMonths(now, 1));
-          break;
-        case 'quarter':
-          currentStart = startOfQuarter(now);
-          currentEnd = endOfQuarter(now);
-          previousStart = startOfQuarter(subQuarters(now, 1));
-          previousEnd = endOfQuarter(subQuarters(now, 1));
-          break;
-        case 'year':
-          currentStart = startOfYear(now);
-          currentEnd = endOfYear(now);
-          previousStart = startOfYear(subYears(now, 1));
-          previousEnd = endOfYear(subYears(now, 1));
-          break;
-      }
-
-      const formatDate = (date: Date) => format(date, 'yyyy-MM-dd');
-
-      // Fetch current period data
-      const [currentRevenue, currentExpenses] = await Promise.all([
-        supabase
-          .from("facts_revenue_daily")
-          .select("amount_accrual")
-          .eq("company_id", profile.company_id)
-          .gte("date", formatDate(currentStart))
-          .lte("date", formatDate(currentEnd)),
-        supabase
-          .from("facts_expenses_daily")
-          .select("amount")
-          .eq("company_id", profile.company_id)
-          .gte("date", formatDate(currentStart))
-          .lte("date", formatDate(currentEnd))
+      const fd = (d: Date) => format(d, 'yyyy-MM-dd');
+      const [invoices, expenses] = await Promise.all([
+        db.table<Invoice>('invoices').list(),
+        db.table<ExpenseNew>('expenses_new').list(),
       ]);
 
-      // Fetch previous period data
-      const [previousRevenue, previousExpenses] = await Promise.all([
-        supabase
-          .from("facts_revenue_daily")
-          .select("amount_accrual")
-          .eq("company_id", profile.company_id)
-          .gte("date", formatDate(previousStart))
-          .lte("date", formatDate(previousEnd)),
-        supabase
-          .from("facts_expenses_daily")
-          .select("amount")
-          .eq("company_id", profile.company_id)
-          .gte("date", formatDate(previousStart))
-          .lte("date", formatDate(previousEnd))
-      ]);
+      const sumInv = (s: string, e: string) => invoices.filter(i => i.issue_date >= s && i.issue_date <= e).reduce((a, i) => a + i.amount_total, 0);
+      const sumExp = (s: string, e: string) => expenses.filter(x => x.date >= s && x.date <= e).reduce((a, x) => a + x.amount, 0);
 
-      if (currentRevenue.error) throw currentRevenue.error;
-      if (currentExpenses.error) throw currentExpenses.error;
-      if (previousRevenue.error) throw previousRevenue.error;
-      if (previousExpenses.error) throw previousExpenses.error;
-
-      // Calculate totals
-      const currentRevenueTotal = (currentRevenue.data || []).reduce((sum, row) => sum + (row.amount_accrual || 0), 0);
-      const currentExpensesTotal = (currentExpenses.data || []).reduce((sum, row) => sum + (row.amount || 0), 0);
-      const previousRevenueTotal = (previousRevenue.data || []).reduce((sum, row) => sum + (row.amount_accrual || 0), 0);
-      const previousExpensesTotal = (previousExpenses.data || []).reduce((sum, row) => sum + (row.amount || 0), 0);
-
-      const currentProfit = currentRevenueTotal - currentExpensesTotal;
-      const previousProfit = previousRevenueTotal - previousExpensesTotal;
-
-      // Calculate growth percentages
-      const calculateGrowth = (current: number, previous: number): number => {
-        if (previous === 0) return current > 0 ? 100 : 0;
-        return ((current - previous) / Math.abs(previous)) * 100;
-      };
+      const cR = sumInv(fd(cS), fd(cE)); const cX = sumExp(fd(cS), fd(cE)); const cP = cR - cX;
+      const pR = sumInv(fd(pS), fd(pE)); const pX = sumExp(fd(pS), fd(pE)); const pP = pR - pX;
+      const g = (c: number, p: number) => p === 0 ? (c > 0 ? 100 : 0) : ((c - p) / Math.abs(p)) * 100;
 
       return {
-        current: {
-          revenue: currentRevenueTotal,
-          expenses: currentExpensesTotal,
-          profit: currentProfit,
-          cashFlow: currentProfit, // Using profit as proxy for cash flow
-        },
-        previous: {
-          revenue: previousRevenueTotal,
-          expenses: previousExpensesTotal,
-          profit: previousProfit,
-          cashFlow: previousProfit,
-        },
-        growth: {
-          revenue: calculateGrowth(currentRevenueTotal, previousRevenueTotal),
-          expenses: calculateGrowth(currentExpensesTotal, previousExpensesTotal),
-          profit: calculateGrowth(currentProfit, previousProfit),
-          cashFlow: calculateGrowth(currentProfit, previousProfit),
-        }
+        current: { revenue: cR, expenses: cX, profit: cP, cashFlow: cP },
+        previous: { revenue: pR, expenses: pX, profit: pP, cashFlow: pP },
+        growth: { revenue: g(cR, pR), expenses: g(cX, pX), profit: g(cP, pP), cashFlow: g(cP, pP) },
       };
     },
   });

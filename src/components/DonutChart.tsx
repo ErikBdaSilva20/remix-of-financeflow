@@ -61,10 +61,10 @@ export function DonutChart({ data, title, centerValue, centerLabel, className, o
       <CardContent className="pb-6">
         <div className="space-y-4">
           {/* Chart */}
-          <div className="relative h-[450px]">
+          <div className="relative h-[280px] sm:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={data} cx="50%" cy="50%" innerRadius={95} outerRadius={160} paddingAngle={0} dataKey="value">
+                <Pie data={data} cx="50%" cy="50%" innerRadius="40%" outerRadius="65%" paddingAngle={0} dataKey="value">
                   {data.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
@@ -76,7 +76,7 @@ export function DonutChart({ data, title, centerValue, centerLabel, className, o
                 </Pie>
                 <Tooltip
                   content={<CustomTooltip />}
-                  wrapperStyle={{ zIndex: 9999 }} // ensure tooltip is above center text
+                  wrapperStyle={{ zIndex: 9999 }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -85,8 +85,8 @@ export function DonutChart({ data, title, centerValue, centerLabel, className, o
             {centerValue && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-foreground">{centerValue}</div>
-                  {centerLabel && <div className="text-base text-muted-foreground">{centerLabel}</div>}
+                  <div className="text-xl sm:text-3xl font-bold text-foreground leading-tight">{centerValue}</div>
+                  {centerLabel && <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">{centerLabel}</div>}
                 </div>
               </div>
             )}

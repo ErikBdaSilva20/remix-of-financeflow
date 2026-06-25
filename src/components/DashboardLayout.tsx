@@ -4,15 +4,14 @@ import { FinancialSidebar } from "./FinancialSidebar";
 import { NotificationPopover } from "./NotificationPopover";
 import { SearchResults } from "./SearchResults";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Fuel, Wallet, LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Search, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
 import { useGlobalSearch, SearchResult } from "@/hooks/useGlobalSearch";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
+import { ParticleBackground } from "./ParticleBackground";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,24 +20,12 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [userEmail, setUserEmail] = useState<string>("");
-  const [isDemoUser, setIsDemoUser] = useState(false);
+  const { user, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  
-  const { results, isLoading } = useGlobalSearch(searchQuery);
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email || "");
-        setIsDemoUser(user.email === "demo@financeflow.app");
-      }
-    };
-    getUser();
-  }, []);
+  const { results, isLoading } = useGlobalSearch(searchQuery);
 
   // Close search results when clicking outside
   useEffect(() => {
@@ -76,7 +63,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       case 'contact':
         // Navigate to overview with contact highlighted
         toast({
-          title: "Contact Found",
+          title: "Contato Encontrado",
           description: `${result.title} - ${result.subtitle}`,
         });
         navigate('/');
@@ -85,41 +72,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const handleSignOut = async () => {
-    // Reset demo data if this is the demo user
-    if (isDemoUser) {
-      try {
-        const { error: resetError } = await supabase.rpc('reset_demo_data');
-        if (resetError) {
-          console.error('Error resetting demo data:', resetError);
-        }
-      } catch (error) {
-        console.error('Error resetting demo data:', error);
-      }
-    }
-
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error signing out",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Signed out successfully",
-        description: isDemoUser 
-          ? "Demo data has been reset. Next time you log in, you'll start fresh." 
-          : "You have been logged out of FinanceFlow.",
-      });
-    }
+    await signOut();
+    toast({
+      title: "Saída realizada com sucesso",
+      description: "Você foi desconectado do FinanceFlow.",
+    });
   };
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background relative">
+        <ParticleBackground />
         <FinancialSidebar />
         
-        <div className="flex-1 flex flex-col overflow-visible">
+        <div className="flex-1 flex flex-col overflow-visible relative z-10">
           {/* Header */}
           <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 sticky top-0 z-50 overflow-visible">
             <div className="flex items-center gap-4 flex-1 overflow-visible relative">
@@ -129,7 +95,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="relative flex-1 max-w-2xl z-50" ref={searchRef}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 z-10" />
                 <Input
-                  placeholder="Search for transactions, accounts and anything else financial"
+                  placeholder="Pesquise por transações, contas e qualquer coisa financeira"
                   className="pl-10 bg-muted-50 border-none"
                   value={searchQuery}
                   onChange={handleSearchChange}
@@ -140,7 +106,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 )}
                 {isLoading && searchQuery.trim().length >= 2 && (
                   <div className="absolute top-full left-0 right-0 mt-2 p-4 bg-card rounded-md shadow-2xl z-[9999] border border-border">
-                    <p className="text-sm text-muted-foreground text-center">Searching...</p>
+                    <p className="text-sm text-muted-foreground text-center">Pesquisando...</p>
                   </div>
                 )}
               </div>
@@ -150,42 +116,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center gap-3">
               {/* Notification Bell */}
               <NotificationPopover />
-              
-              {/* Action Buttons */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    className="bg-secondary text-secondary-foreground hover:bg-secondary-hover-90"
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Bank account connection feature is under development.",
-                      });
-                    }}
-                  >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Connect Account
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Coming Soon</p>
-                </TooltipContent>
-              </Tooltip>
-              
+
               {/* Logout Button */}
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleSignOut}
                 className="gap-2"
+                title={user?.email}
               >
                 <LogOut className="w-4 h-4" />
-                {isDemoUser ? "Exit Demo" : "Log Out"}
+                {user?.name ?? user?.email ?? 'Sair'}
               </Button>
             </div>
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 p-6 bg-background overflow-auto relative z-0">
+          <main className="flex-1 p-6 bg-transparent overflow-auto relative z-0">
             {children}
           </main>
         </div>

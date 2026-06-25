@@ -1,29 +1,17 @@
-import { useState } from "react";
-import { MetricCard } from "@/components/MetricCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { StackedBarChart } from "@/components/StackedBarChart";
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Repeat,
-  BarChart3
-} from "@/components/icons";
-import { 
-  useFinancialMetrics, 
-  useRevenueSources, 
-  useRevenueTrends,
-  formatCurrency,
-  formatPercentage
-} from "@/hooks/useFinancialData";
-import { FilterHeader, FilterState } from "@/components/FilterHeader";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
-import { useRevenueDrillDown } from "@/hooks/useRevenueDrillDown";
-import { RevenueDrillDownTable } from "@/components/RevenueDrillDownTable";
-import { useRevenueDimensions } from "@/hooks/useRevenueDimensions";
-import { RevenueDimensionTable } from "@/components/RevenueDimensionTable";
+import { FilterHeader, FilterState } from '@/components/FilterHeader';
+import { MetricCard } from '@/components/MetricCard';
+import { RevenueDimensionTable } from '@/components/RevenueDimensionTable';
+import { RevenueDrillDownTable } from '@/components/RevenueDrillDownTable';
+import { StackedBarChart } from '@/components/StackedBarChart';
+import { BarChart3, DollarSign, Repeat, TrendingUp } from '@/components/icons';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
+import { useFinancialMetrics, useRevenueSources, useRevenueTrends } from '@/hooks/useFinancialData';
+import { useRevenueDimensions } from '@/hooks/useRevenueDimensions';
+import { useRevenueDrillDown } from '@/hooks/useRevenueDrillDown';
+import { useState } from 'react';
+import { Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 // Mock data for enhanced charts
 const mrrData = [
@@ -32,45 +20,87 @@ const mrrData = [
   { month: 'Mar', mrr: 52000, arr: 624000 },
   { month: 'Apr', mrr: 54200, arr: 650400 },
   { month: 'May', mrr: 57800, arr: 693600 },
-  { month: 'Jun', mrr: 62500, arr: 750000 }
+  { month: 'Jun', mrr: 62500, arr: 750000 },
 ];
 
 const stackedRevenueData = [
-  { month: 'Jan', dateKey: '2024-01', product1: 95000, product2: 65000, product3: 45000, services: 40000 },
-  { month: 'Feb', dateKey: '2024-02', product1: 105000, product2: 68000, product3: 50000, services: 45000 },
-  { month: 'Mar', dateKey: '2024-03', product1: 110000, product2: 72000, product3: 53000, services: 50000 },
-  { month: 'Apr', dateKey: '2024-04', product1: 108000, product2: 69000, product3: 48000, services: 47000 },
-  { month: 'May', dateKey: '2024-05', product1: 115000, product2: 75000, product3: 55000, services: 50000 },
-  { month: 'Jun', dateKey: '2024-06', product1: 125000, product2: 80000, product3: 60000, services: 45000 }
+  {
+    month: 'Jan',
+    dateKey: '2024-01',
+    product1: 95000,
+    product2: 65000,
+    product3: 45000,
+    services: 40000,
+  },
+  {
+    month: 'Feb',
+    dateKey: '2024-02',
+    product1: 105000,
+    product2: 68000,
+    product3: 50000,
+    services: 45000,
+  },
+  {
+    month: 'Mar',
+    dateKey: '2024-03',
+    product1: 110000,
+    product2: 72000,
+    product3: 53000,
+    services: 50000,
+  },
+  {
+    month: 'Apr',
+    dateKey: '2024-04',
+    product1: 108000,
+    product2: 69000,
+    product3: 48000,
+    services: 47000,
+  },
+  {
+    month: 'May',
+    dateKey: '2024-05',
+    product1: 115000,
+    product2: 75000,
+    product3: 55000,
+    services: 50000,
+  },
+  {
+    month: 'Jun',
+    dateKey: '2024-06',
+    product1: 125000,
+    product2: 80000,
+    product3: 60000,
+    services: 45000,
+  },
 ];
 
 const stackedRegionData = [
-  { month: 'Jan', dateKey: '2024-01', 'North America': 120000, 'Europe': 80000, 'Asia': 45000 },
-  { month: 'Feb', dateKey: '2024-02', 'North America': 135000, 'Europe': 85000, 'Asia': 48000 },
-  { month: 'Mar', dateKey: '2024-03', 'North America': 142000, 'Europe': 90000, 'Asia': 53000 },
-  { month: 'Apr', dateKey: '2024-04', 'North America': 135000, 'Europe': 87000, 'Asia': 50000 },
-  { month: 'May', dateKey: '2024-05', 'North America': 148000, 'Europe': 92000, 'Asia': 55000 },
-  { month: 'Jun', dateKey: '2024-06', 'North America': 155000, 'Europe': 100000, 'Asia': 55000 }
+  { month: 'Jan', dateKey: '2024-01', 'North America': 120000, Europe: 80000, Asia: 45000 },
+  { month: 'Feb', dateKey: '2024-02', 'North America': 135000, Europe: 85000, Asia: 48000 },
+  { month: 'Mar', dateKey: '2024-03', 'North America': 142000, Europe: 90000, Asia: 53000 },
+  { month: 'Apr', dateKey: '2024-04', 'North America': 135000, Europe: 87000, Asia: 50000 },
+  { month: 'May', dateKey: '2024-05', 'North America': 148000, Europe: 92000, Asia: 55000 },
+  { month: 'Jun', dateKey: '2024-06', 'North America': 155000, Europe: 100000, Asia: 55000 },
 ];
 
 const Revenue = () => {
   const [filters, setFilters] = useState<FilterState>({
     dateRange: {},
-    currency: 'USD'
+    currency: 'USD',
   });
 
   const [drillDownParams, setDrillDownParams] = useState<{
     startDate: string;
     endDate: string;
     category?: string;
-    categoryType?: "product" | "region" | "channel";
+    categoryType?: 'product' | 'region' | 'channel';
   } | null>(null);
 
   const { data: metrics, isLoading: metricsLoading } = useFinancialMetrics(filters.dateRange);
   const { data: revenueSources, isLoading: revenueLoading } = useRevenueSources(filters.dateRange);
   const { data: revenueTrends, isLoading: trendsLoading } = useRevenueTrends(filters.dateRange);
   const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency);
-  
+
   const { data: drillDownData, isLoading: drillDownLoading } = useRevenueDrillDown(drillDownParams);
   const { data: dimensionsData } = useRevenueDimensions(filters.dateRange);
 
@@ -78,11 +108,11 @@ const Revenue = () => {
     if (data && data.activePayload && data.activePayload[0]) {
       const payload = data.activePayload[0].payload;
       const dateKey = payload.dateKey;
-      
+
       // Determine the date range based on the dateKey format
       let startDate: string;
       let endDate: string;
-      
+
       if (dateKey.length === 7) {
         // Monthly format (YYYY-MM)
         const [year, month] = dateKey.split('-');
@@ -95,7 +125,7 @@ const Revenue = () => {
         startDate = dateKey;
         endDate = dateKey;
       }
-      
+
       setDrillDownParams({ startDate, endDate });
     }
   };
@@ -104,17 +134,20 @@ const Revenue = () => {
     setDrillDownParams(null);
   };
 
-  const handleDimensionClick = (dimension: string, dimensionType: "product" | "region" | "channel") => {
+  const handleDimensionClick = (
+    dimension: string,
+    dimensionType: 'product' | 'region' | 'channel'
+  ) => {
     if (!filters.dateRange?.from || !filters.dateRange?.to) return;
-    
+
     const startDate = filters.dateRange.from.toISOString().split('T')[0];
     const endDate = filters.dateRange.to.toISOString().split('T')[0];
-    
+
     setDrillDownParams({
       startDate,
       endDate,
-      category: dimension === "Unspecified" ? undefined : dimension,
-      categoryType: dimensionType
+      category: dimension === 'Unspecified' ? undefined : dimension,
+      categoryType: dimensionType,
     });
   };
 
@@ -125,20 +158,20 @@ const Revenue = () => {
     const startDate = `${year}-${month}-01`;
     const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-    
+
     // Map product keys to product IDs
     const productMap: Record<string, string> = {
-      'product1': 'Product A',
-      'product2': 'Product B', 
-      'product3': 'Product C',
-      'services': 'Services'
+      product1: 'Produto A',
+      product2: 'Produto B',
+      product3: 'Produto C',
+      services: 'Serviços',
     };
-    
+
     setDrillDownParams({
       startDate,
       endDate,
       category: productMap[productKey],
-      categoryType: 'product'
+      categoryType: 'product',
     });
   };
 
@@ -149,18 +182,18 @@ const Revenue = () => {
     const startDate = `${year}-${month}-01`;
     const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-    
+
     setDrillDownParams({
       startDate,
       endDate,
       category: regionKey,
-      categoryType: 'region'
+      categoryType: 'region',
     });
   };
 
   // Helper function to get metric by type
   const getMetric = (type: string) => {
-    return metrics?.find(m => m.metric_type === type);
+    return metrics?.find((m) => m.metric_type === type);
   };
 
   if (metricsLoading || revenueLoading || trendsLoading) {
@@ -168,7 +201,7 @@ const Revenue = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading revenue data...</p>
+          <p className="text-muted-foreground">Carregando dados de receita...</p>
         </div>
       </div>
     );
@@ -186,110 +219,105 @@ const Revenue = () => {
 
   return (
     <div className="space-y-0">
-      <FilterHeader 
-        filters={filters}
-        onFiltersChange={setFilters}
-        showFxCurrency={true}
-      />
-      
+      <FilterHeader filters={filters} onFiltersChange={setFilters} showFxCurrency={true} />
+
       <div className="space-y-6 p-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl text-foreground">Revenue Analytics</h1>
-        <p className="text-muted-foreground">Track and analyze all revenue streams</p>
-      </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl text-foreground">Análise de Receita</h1>
+          <p className="text-muted-foreground">Acompanhe e analise todos os fluxos de receita</p>
+        </div>
 
-      {/* Revenue Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Revenue"
-          value={revenue ? formatWithCurrency(revenue.amount) : `${currencySymbol}0`}
-          change={revenue ? "+12.5% vs last month" : undefined}
-          changeType="positive"
-          gradient="primary"
-          icon={<DollarSign className="w-6 h-6" />}
-        />
-        <MetricCard
-          title="Monthly Recurring"
-          value={mrr ? formatWithCurrency(mrr.amount) : `${currencySymbol}0`}
-          change={mrr ? "+8.3% vs last month" : undefined}
-          changeType="positive"
-          icon={<Repeat className="w-6 h-6 text-success" />}
-        />
-        <MetricCard
-          title="Annual Recurring"
-          value={arr ? formatWithCurrency(arr.amount) : `${currencySymbol}0`}
-          change={arr ? "+15.7% vs last year" : undefined}
-          changeType="positive"
-          gradient="success"
-          icon={<TrendingUp className="w-6 h-6" />}
-        />
-        <MetricCard
-          title="Average Deal Size"
-          value={`${currencySymbol}0`}
-          change={undefined}
-          changeType="positive"
-          icon={<BarChart3 className="w-6 h-6 text-secondary" />}
-        />
-      </div>
+        {/* Revenue Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            title="Receita Total"
+            value={revenue ? formatWithCurrency(revenue.amount) : `${currencySymbol}0`}
+            change={revenue ? '+12.5% vs mês anterior' : undefined}
+            changeType="positive"
+            gradient="primary"
+            icon={<DollarSign className="w-6 h-6" />}
+          />
+          <MetricCard
+            title="Recorrência Mensal (MRR)"
+            value={mrr ? formatWithCurrency(mrr.amount) : `${currencySymbol}0`}
+            change={mrr ? '+8.3% vs mês anterior' : undefined}
+            changeType="positive"
+            icon={<Repeat className="w-6 h-6 text-success" />}
+          />
+          <MetricCard
+            title="Recorrência Anual (ARR)"
+            value={arr ? formatWithCurrency(arr.amount) : `${currencySymbol}0`}
+            change={arr ? '+15.7% vs ano anterior' : undefined}
+            changeType="positive"
+            gradient="success"
+            icon={<TrendingUp className="w-6 h-6" />}
+          />
+          <MetricCard
+            title="Tamanho Médio do Contrato"
+            value={`${currencySymbol}0`}
+            change={undefined}
+            changeType="positive"
+            icon={<BarChart3 className="w-6 h-6 text-secondary" />}
+          />
+        </div>
 
-
-      {/* MRR/ARR Trend Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Monthly Recurring Revenue Trends</CardTitle>
-        </CardHeader>
+        {/* MRR/ARR Trend Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Tendências de Receita Recorrente Mensal</CardTitle>
+          </CardHeader>
           <CardContent>
             {revenueTrends && revenueTrends.length > 0 ? (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
-                    data={revenueTrends} 
+                  <LineChart
+                    data={revenueTrends}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     onClick={handlePeriodClick}
                   >
-                    <XAxis 
+                    <XAxis
                       dataKey="period"
                       axisLine={false}
                       tickLine={false}
                       tick={{ fontSize: 12 }}
                       className="fill-muted-foreground"
                     />
-                    <YAxis 
+                    <YAxis
                       axisLine={false}
                       tickLine={false}
                       tick={{ fontSize: 12 }}
                       className="fill-muted-foreground"
                       tickFormatter={(value) => formatWithCurrency(value)}
                     />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value: any) => [formatWithCurrency(value), '']}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      labelStyle={{ color: '#0F172A' }}
                       contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: '8px'
+                        backgroundColor: '#F0FDF4',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
                       }}
                     />
                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="accrual" 
-                      stroke="hsl(var(--primary-500))" 
+                    <Line
+                      type="monotone"
+                      dataKey="accrual"
+                      stroke="#059669"
                       strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--primary-500))', strokeWidth: 2, r: 4 }}
-                      name="Accrual Revenue"
-                      activeDot={{ r: 6, stroke: 'hsl(var(--primary-500))', strokeWidth: 2 }}
+                      dot={{ fill: '#059669', strokeWidth: 2, r: 4 }}
+                      name="Receita de Competência"
+                      activeDot={{ r: 6, stroke: '#059669', strokeWidth: 2 }}
                       cursor="pointer"
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="cash" 
-                      stroke="hsl(var(--secondary-500))" 
+                    <Line
+                      type="monotone"
+                      dataKey="cash"
+                      stroke="#0891B2"
                       strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--secondary-500))', strokeWidth: 2, r: 4 }}
-                      name="Cash Revenue"
-                      activeDot={{ r: 6, stroke: 'hsl(var(--secondary-500))', strokeWidth: 2 }}
+                      dot={{ fill: '#0891B2', strokeWidth: 2, r: 4 }}
+                      name="Receita de Caixa"
+                      activeDot={{ r: 6, stroke: '#0891B2', strokeWidth: 2 }}
                       cursor="pointer"
                     />
                   </LineChart>
@@ -297,88 +325,94 @@ const Revenue = () => {
               </div>
             ) : (
               <div className="flex items-center justify-center h-80">
-                <Badge variant="secondary">No Data</Badge>
+                <Badge variant="secondary">Sem dados disponíveis</Badge>
               </div>
-          )}
+            )}
           </CardContent>
-      </Card>
+        </Card>
 
-      {/* Revenue by Product & Region Stacked Bar Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {dimensionsData && dimensionsData.productData.length > 0 && (
-          <StackedBarChart
-            data={stackedRevenueData}
-            title="Revenue by Product"
-            xAxisKey="month"
-            bars={[
-              { dataKey: 'product1', name: 'Product A', color: 'hsl(var(--primary-500))' },
-              { dataKey: 'product2', name: 'Product B', color: 'hsl(var(--secondary-500))' },
-              { dataKey: 'product3', name: 'Product C', color: 'hsl(var(--success-500))' },
-              { dataKey: 'services', name: 'Services', color: 'hsl(var(--warning-500))' }
-            ]}
-            formatValue={formatWithCurrency}
-            onBarClick={(monthKey, productKey) => {
-              const data = stackedRevenueData.find(d => d.month === monthKey);
-              if (data?.dateKey) {
-                handleStackedBarClick(data.dateKey, productKey);
-              }
-            }}
-          />
-        )}
-        
-        {dimensionsData && dimensionsData.regionData.length > 0 && (
-          <StackedBarChart
-            data={stackedRegionData}
-            title="Revenue by Region"
-            xAxisKey="month"
-            bars={[
-              { dataKey: 'North America', name: 'North America', color: 'hsl(var(--primary-500))' },
-              { dataKey: 'Europe', name: 'Europe', color: 'hsl(var(--secondary-500))' },
-              { dataKey: 'Asia', name: 'Asia', color: 'hsl(var(--success-500))' }
-            ]}
-            formatValue={formatWithCurrency}
-            onBarClick={(monthKey, regionKey) => {
-              const data = stackedRegionData.find(d => d.month === monthKey);
-              if (data?.dateKey) {
-                handleRegionBarClick(data.dateKey, regionKey);
-              }
-            }}
-          />
-        )}
-      </div>
+        {/* Revenue by Product & Region Stacked Bar Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {dimensionsData && dimensionsData.productData.length > 0 && (
+            <StackedBarChart
+              data={stackedRevenueData}
+              title="Receita por Produto"
+              xAxisKey="month"
+              bars={[
+                { dataKey: 'product1', name: 'Produto A', color: '#059669' },
+                { dataKey: 'product2', name: 'Produto B', color: '#0891B2' },
+                { dataKey: 'product3', name: 'Produto C', color: '#047857' },
+                { dataKey: 'services', name: 'Serviços', color: '#0E7490' },
+              ]}
+              formatValue={formatWithCurrency}
+              onBarClick={(monthKey, productKey) => {
+                const data = stackedRevenueData.find((d) => d.month === monthKey);
+                if (data?.dateKey) {
+                  handleStackedBarClick(data.dateKey, productKey);
+                }
+              }}
+            />
+          )}
 
-      {/* Revenue Breakdown by Dimension */}
-      <RevenueDimensionTable
-        productData={dimensionsData?.productData || []}
-        regionData={dimensionsData?.regionData || []}
-        channelData={dimensionsData?.channelData || []}
-        formatCurrency={formatWithCurrency}
-        onDimensionClick={handleDimensionClick}
-      />
+          {dimensionsData && dimensionsData.regionData.length > 0 && (
+            <StackedBarChart
+              data={stackedRegionData}
+              title="Receita por Região"
+              xAxisKey="month"
+              bars={[
+                {
+                  dataKey: 'North America',
+                  name: 'América do Norte',
+                  color: '#059669',
+                },
+                { dataKey: 'Europe', name: 'Europa', color: '#0891B2' },
+                { dataKey: 'Asia', name: 'Ásia', color: '#047857' },
+              ]}
+              formatValue={formatWithCurrency}
+              onBarClick={(monthKey, regionKey) => {
+                const data = stackedRegionData.find((d) => d.month === monthKey);
+                if (data?.dateKey) {
+                  handleRegionBarClick(data.dateKey, regionKey);
+                }
+              }}
+            />
+          )}
+        </div>
 
-      {/* Drill-down table */}
-      {drillDownParams && (
-        <RevenueDrillDownTable
-          data={drillDownData || []}
-          title={`Revenue Transactions - ${drillDownParams.startDate}${
-            drillDownParams.endDate !== drillDownParams.startDate ? ` to ${drillDownParams.endDate}` : ""
-          }`}
-          onClose={closeDrillDown}
-          isLoading={drillDownLoading}
+        {/* Revenue Breakdown by Dimension */}
+        <RevenueDimensionTable
+          productData={dimensionsData?.productData || []}
+          regionData={dimensionsData?.regionData || []}
+          channelData={dimensionsData?.channelData || []}
+          formatCurrency={formatWithCurrency}
+          onDimensionClick={handleDimensionClick}
         />
-      )}
 
-      {/* Revenue by Product/Region Stacked Chart - Hidden for now */}
-      {/* {revenueSources && revenueSources.length > 0 ? (
+        {/* Drill-down table */}
+        {drillDownParams && (
+          <RevenueDrillDownTable
+            data={drillDownData || []}
+            title={`Transações de Receita - ${drillDownParams.startDate}${
+              drillDownParams.endDate !== drillDownParams.startDate
+                ? ` a ${drillDownParams.endDate}`
+                : ''
+            }`}
+            onClose={closeDrillDown}
+            isLoading={drillDownLoading}
+          />
+        )}
+
+        {/* Revenue by Product/Region Stacked Chart - Hidden for now */}
+        {/* {revenueSources && revenueSources.length > 0 ? (
         <StackedBarChart
           data={stackedRevenueData}
           title="Revenue by Product & Region"
           xAxisKey="month"
           bars={[
-            { dataKey: 'product1', name: 'Product A', color: 'hsl(var(--primary-500))' },
-            { dataKey: 'product2', name: 'Product B', color: 'hsl(var(--secondary-500))' },
-            { dataKey: 'product3', name: 'Product C', color: 'hsl(var(--success-500))' },
-            { dataKey: 'services', name: 'Services', color: 'hsl(var(--warning-500))' }
+            { dataKey: 'product1', name: 'Product A', color: '#059669' },
+            { dataKey: 'product2', name: 'Product B', color: '#0891B2' },
+            { dataKey: 'product3', name: 'Product C', color: '#047857' },
+            { dataKey: 'services', name: 'Services', color: '#0E7490' }
           ]}
           formatValue={formatCurrency}
         />
@@ -391,36 +425,36 @@ const Revenue = () => {
         </Card>
       )} */}
 
-      {/* SaaS Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-4 bg-gradient-primary text-primary-foreground">
-          <div className="text-center">
-            <div className="text-2xl font-bold">
-              {mrr ? formatWithCurrency(mrr.amount) : `${currencySymbol}0`}
+        {/* SaaS Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="p-4 bg-gradient-primary text-primary-foreground">
+            <div className="text-center">
+              <div className="text-2xl font-bold">
+                {mrr ? formatWithCurrency(mrr.amount) : `${currencySymbol}0`}
+              </div>
+              <div className="text-sm opacity-90">Receita Recorrente Mensal (MRR)</div>
+              {mrr && <div className="text-xs opacity-80">+8.3% vs mês anterior</div>}
             </div>
-            <div className="text-sm opacity-90">Monthly Recurring Revenue</div>
-            {mrr && <div className="text-xs opacity-80">+8.3% vs last month</div>}
-          </div>
-        </Card>
-        
-        <Card className="p-4 bg-gradient-secondary text-secondary-foreground">
-          <div className="text-center">
-            <div className="text-2xl font-bold">
-              {arr ? formatWithCurrency(arr.amount) : `${currencySymbol}0`}
+          </Card>
+
+          <Card className="p-4 bg-gradient-secondary text-secondary-foreground">
+            <div className="text-center">
+              <div className="text-2xl font-bold">
+                {arr ? formatWithCurrency(arr.amount) : `${currencySymbol}0`}
+              </div>
+              <div className="text-sm opacity-90">Receita Recorrente Anual (ARR)</div>
+              {arr && <div className="text-xs opacity-80">+15.7% vs ano anterior</div>}
             </div>
-            <div className="text-sm opacity-90">Annual Recurring Revenue</div>
-            {arr && <div className="text-xs opacity-80">+15.7% vs last year</div>}
-          </div>
-        </Card>
-        
-        <Card className="p-4 bg-gradient-success text-success-foreground">
-          <div className="text-center">
-            <div className="text-2xl font-bold">{revenue ? "92.3%" : "0%"}</div>
-            <div className="text-sm opacity-90">Revenue Retention Rate</div>
-            {revenue && <div className="text-xs opacity-80">+2.1% vs last quarter</div>}
-          </div>
-        </Card>
-      </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-success text-success-foreground">
+            <div className="text-center">
+              <div className="text-2xl font-bold">{revenue ? '92.3%' : '0%'}</div>
+              <div className="text-sm opacity-90">Taxa de Retenção de Receita</div>
+              {revenue && <div className="text-xs opacity-80">+2.1% vs trimestre anterior</div>}
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

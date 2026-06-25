@@ -23,8 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Contact, ContactInput } from "@/hooks/useContacts";
 
 const contactSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  name: z.string().min(1, "O nome é obrigatório").max(100),
+  email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   phone: z
     .string()
     .optional()
@@ -35,7 +35,7 @@ const contactSchema = z.object({
         const phoneRegex = /^[\d\s\-\(\)\+]+$/;
         return phoneRegex.test(val);
       },
-      { message: "Phone must contain only digits, spaces, +, -, ( )" }
+      { message: "O telefone deve conter apenas números, espaços, +, -, ( )" }
     )
     .refine(
       (val) => {
@@ -44,7 +44,7 @@ const contactSchema = z.object({
         const digitsOnly = val.replace(/\D/g, "");
         return digitsOnly.length >= 7 && digitsOnly.length <= 15;
       },
-      { message: "Phone must contain 7-15 digits" }
+      { message: "O telefone deve conter de 7 a 15 números" }
     ),
   address: z.string().max(200).optional(),
   notes: z.string().max(500).optional(),
@@ -113,11 +113,11 @@ export function ContactForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{contact ? "Edit Contact" : "Add Contact"}</DialogTitle>
+          <DialogTitle>{contact ? "Editar Contato" : "Adicionar Contato"}</DialogTitle>
           <DialogDescription>
             {contact
-              ? "Update the contact information below."
-              : "Add a new contact to your address book."}
+              ? "Atualize as informações do contato abaixo."
+              : "Adicione um novo contato ao seu cadastro."}
           </DialogDescription>
         </DialogHeader>
 
@@ -128,9 +128,9 @@ export function ContactForm({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name *</FormLabel>
+                  <FormLabel>Nome *</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Input placeholder="João da Silva" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -142,9 +142,9 @@ export function ContactForm({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>E-mail</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="john@example.com" {...field} />
+                    <Input type="email" placeholder="joao@exemplo.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -156,10 +156,10 @@ export function ContactForm({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone</FormLabel>
+                  <FormLabel>Telefone</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="+1 (555) 123-4567" 
+                      placeholder="+55 (11) 91234-5678" 
                       {...field}
                       type="tel"
                     />
@@ -174,9 +174,9 @@ export function ContactForm({
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address</FormLabel>
+                  <FormLabel>Endereço</FormLabel>
                   <FormControl>
-                    <Input placeholder="123 Main St, City, State" {...field} />
+                    <Input placeholder="Rua Principal, 123, Cidade, Estado" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -188,16 +188,16 @@ export function ContactForm({
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>Observações</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Additional notes about this contact..."
+                      placeholder="Observações adicionais sobre este contato..."
                       {...field}
                       rows={3}
                     />
                   </FormControl>
                   <div className="text-xs text-muted-foreground text-right mt-1">
-                    {(field.value?.length || 0)}/500 characters
+                    {(field.value?.length || 0)}/500 caracteres
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -209,7 +209,7 @@ export function ContactForm({
               name="avatar_color"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Avatar Color</FormLabel>
+                  <FormLabel>Cor do Avatar</FormLabel>
                   <FormControl>
                     <div className="flex gap-2">
                       {avatarColors.map((color) => (
@@ -238,10 +238,10 @@ export function ContactForm({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : contact ? "Update" : "Create"}
+                {isSubmitting ? "Salvando..." : contact ? "Atualizar" : "Criar"}
               </Button>
             </div>
           </form>

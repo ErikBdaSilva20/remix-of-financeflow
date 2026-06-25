@@ -1,19 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import { db } from "@/lib/data/client";
+import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 
 export interface ExpenseDrillDownData {
   filterType: "category" | "period";
   category?: string;
   periodLabel?: string;
-  data: {
-    date: string;
-    dateKey: string; // ISO date for FX conversion
-    description: string;
-    amount: number;
-    category?: string;
-  }[];
+  data: { date: string; dateKey: string; description: string; amount: number; category?: string; }[];
 }
 
 type DrillDownRequest =
@@ -27,101 +22,45 @@ export function useExpenseDrillDown(dateRange?: { from?: Date; to?: Date }) {
     queryKey: ["expense-drill-down", drillDownRequest, dateRange?.from, dateRange?.to],
     queryFn: async () => {
       if (!drillDownRequest) return null;
+      const expenses = await db.table<ExpenseNew>('expenses_new').list();
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile?.company_id) return null;
-
-      let query = supabase
-        .from("facts_expenses_daily")
-        .select("date, amount, category, vendor")
-        .eq("company_id", profile.company_id);
-
+      let filtered: ExpenseNew[];
       if (drillDownRequest.type === "category") {
-        query = query.eq("category", drillDownRequest.category);
-
-        if (dateRange?.from) {
-          query = query.gte("date", format(dateRange.from, "yyyy-MM-dd"));
-        }
-        if (dateRange?.to) {
-          query = query.lte("date", format(dateRange.to, "yyyy-MM-dd"));
-        }
+        const fromStr = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
+        const toStr = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
+        filtered = expenses.filter(e =>
+          e.category === drillDownRequest.category &&
+          (!fromStr || e.date >= fromStr) &&
+          (!toStr || e.date <= toStr)
+        );
       } else {
-        let startDateStr: string;
-        let endDateStr: string;
-
+        let startStr: string, endStr: string;
         if (drillDownRequest.granularity === "day") {
-          startDateStr = drillDownRequest.dateKey;
-          endDateStr = drillDownRequest.dateKey;
+          startStr = endStr = drillDownRequest.dateKey;
         } else {
-          const baseDate = new Date(
-            drillDownRequest.dateKey.length === 7
-              ? `${drillDownRequest.dateKey}-01`
-              : drillDownRequest.dateKey
-          );
-          const start = startOfMonth(baseDate);
-          const end = endOfMonth(baseDate);
-          startDateStr = format(start, "yyyy-MM-dd");
-          endDateStr = format(end, "yyyy-MM-dd");
+          const base = new Date(drillDownRequest.dateKey.length === 7 ? `${drillDownRequest.dateKey}-01` : drillDownRequest.dateKey);
+          startStr = format(startOfMonth(base), 'yyyy-MM-dd');
+          endStr = format(endOfMonth(base), 'yyyy-MM-dd');
         }
-
-        query = query.gte("date", startDateStr).lte("date", endDateStr);
+        filtered = expenses.filter(e => e.date >= startStr && e.date <= endStr);
       }
 
-      const { data, error } = await query.order("date", { ascending: false }).limit(200);
-      if (error) throw error;
+      const transactions = filtered
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 200)
+        .map(e => ({ date: format(new Date(e.date), "MMM dd, yyyy"), dateKey: e.date, description: e.vendor || e.category || "Expense", amount: e.amount, category: e.category ?? undefined }));
 
-      const transactions = (data || []).map((row: any) => ({
-        date: format(new Date(row.date), "MMM dd, yyyy"),
-        dateKey: row.date, // ISO date string for FX conversion
-        description: row.vendor || row.category || "Expense",
-        amount: Number(row.amount || 0),
-        category: row.category || undefined,
-      }));
-
-      if (drillDownRequest.type === "category") {
-        return {
-          filterType: "category",
-          category: drillDownRequest.category,
-          data: transactions,
-        };
-      }
-
-      return {
-        filterType: "period",
-        periodLabel: drillDownRequest.label,
-        data: transactions,
-      };
+      if (drillDownRequest.type === "category") return { filterType: "category", category: drillDownRequest.category, data: transactions };
+      return { filterType: "period", periodLabel: drillDownRequest.label, data: transactions };
     },
     enabled: !!drillDownRequest,
   });
 
-  const openCategoryDrillDown = (category: string) => {
-    setDrillDownRequest({ type: "category", category });
-  };
-
-  const openPeriodDrillDown = (dateKey: string, label: string, granularity: "day" | "month") => {
-    setDrillDownRequest({ type: "period", dateKey, label, granularity });
-  };
-
-  const clearDrillDown = () => {
-    setDrillDownRequest(null);
-  };
-
   return {
     drillDownData: drillDownRequest ? drillDownData : null,
     isLoading,
-    openCategoryDrillDown,
-    openPeriodDrillDown,
-    clearDrillDown,
+    openCategoryDrillDown: (category: string) => setDrillDownRequest({ type: "category", category }),
+    openPeriodDrillDown: (dateKey: string, label: string, granularity: "day" | "month") => setDrillDownRequest({ type: "period", dateKey, label, granularity }),
+    clearDrillDown: () => setDrillDownRequest(null),
   };
 }

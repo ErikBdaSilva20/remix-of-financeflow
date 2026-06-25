@@ -41,7 +41,7 @@ export function SearchResults({ results, onResultClick }: SearchResultsProps) {
   if (results.length === 0) {
     return (
       <Card className="absolute top-[calc(100%+0.5rem)] left-0 right-0 p-4 z-[9999] shadow-2xl bg-card border border-border">
-        <p className="text-sm text-muted-foreground text-center">No results found</p>
+        <p className="text-sm text-muted-foreground text-center">Nenhum resultado encontrado</p>
       </Card>
     );
   }

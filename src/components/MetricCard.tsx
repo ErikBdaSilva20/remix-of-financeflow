@@ -74,26 +74,37 @@ export function MetricCard({
   return (
     <Card 
       className={cn(
-        "p-4 rounded-xl border shadow-md transition-all duration-200 hover:shadow-lg",
+        "p-6 rounded-2xl border shadow-sm transition-all duration-200 hover:shadow-md",
         onClick && "cursor-pointer",
         getGradientClass(),
         className
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between">
-        <div className="space-y-2 flex-1">
+      <div className="flex flex-col justify-between h-full gap-4">
+        <div className="flex items-center justify-between">
           <p className={cn(
             "text-sm font-medium",
             gradient !== "none" ? "text-inherit opacity-90" : "text-muted-foreground"
           )}>
             {title}
           </p>
+          {icon && (
+            <div className={cn(
+              "flex-shrink-0 p-2.5 rounded-xl",
+              gradient !== "none" ? "bg-white/20" : "bg-muted/50 text-muted-foreground"
+            )}>
+              {icon}
+            </div>
+          )}
+        </div>
+        
+        <div>
           {fullValue ? (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <p className="text-2xl font-bold tracking-tight cursor-help">{value}</p>
+                  <p className="text-3xl font-bold tracking-tight cursor-help">{value}</p>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{fullValue}</p>
@@ -101,26 +112,21 @@ export function MetricCard({
               </Tooltip>
             </TooltipProvider>
           ) : (
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
+            <p className="text-3xl font-bold tracking-tight">{value}</p>
           )}
+          
           {hasData && change && (
             <div className={cn(
-              "flex items-center gap-1 text-sm font-medium",
+              "flex items-center gap-1.5 text-sm font-medium mt-2",
               getChangeColor()
             )}>
-              {getChangeIcon()}
-              {change}
+              <span className="flex items-center justify-center rounded-full bg-current/10 p-0.5">
+                {getChangeIcon()}
+              </span>
+              <span>{change}</span>
             </div>
           )}
         </div>
-        {icon && (
-          <div className={cn(
-            "flex-shrink-0 p-2 rounded-lg",
-            gradient !== "none" ? "bg-white/20" : "bg-muted"
-          )}>
-            {icon}
-          </div>
-        )}
       </div>
     </Card>
   );

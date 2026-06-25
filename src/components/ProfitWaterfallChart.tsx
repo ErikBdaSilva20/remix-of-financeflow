@@ -32,11 +32,11 @@ export function ProfitWaterfallChart({ revenue, cogs, operatingExpenses, classNa
   const getBarColor = (type: string) => {
     switch (type) {
       case 'positive':
-        return 'hsl(var(--success-500))';
+        return '#047857';
       case 'negative':
-        return 'hsl(var(--error-500))';
+        return '#EF4444';
       case 'total':
-        return 'hsl(var(--primary-500))';
+        return '#059669';
       default:
         return 'hsl(var(--neutral-400))';
     }
@@ -102,15 +102,15 @@ export function ProfitWaterfallChart({ revenue, cogs, operatingExpenses, classNa
         {/* Legend */}
         <div className="flex justify-center gap-6 mt-4 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--success-500))' }}></div>
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#047857' }}></div>
             <span className="text-muted-foreground">Revenue</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--error-500))' }}></div>
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#EF4444' }}></div>
             <span className="text-muted-foreground">Expenses</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--primary-500))' }}></div>
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#059669' }}></div>
             <span className="text-muted-foreground">Profit</span>
           </div>
         </div>

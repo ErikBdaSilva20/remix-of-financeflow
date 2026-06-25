@@ -1,6 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface DimensionData {
   dimension: string;
@@ -13,21 +20,21 @@ interface RevenueDimensionTableProps {
   regionData: DimensionData[];
   channelData: DimensionData[];
   formatCurrency: (amount: number) => string;
-  onDimensionClick?: (dimension: string, dimensionType: "product" | "region" | "channel") => void;
+  onDimensionClick?: (dimension: string, dimensionType: 'product' | 'region' | 'channel') => void;
 }
 
-export function RevenueDimensionTable({ 
-  productData, 
-  regionData, 
-  channelData, 
+export function RevenueDimensionTable({
+  productData,
+  regionData,
+  channelData,
   formatCurrency,
-  onDimensionClick 
+  onDimensionClick,
 }: RevenueDimensionTableProps) {
-  const renderTable = (data: DimensionData[], dimensionType: "product" | "region" | "channel") => {
+  const renderTable = (data: DimensionData[], dimensionType: 'product' | 'region' | 'channel') => {
     if (!data || data.length === 0) {
       return (
         <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-          No data available
+          Sem dados disponíveis
         </div>
       );
     }
@@ -44,20 +51,16 @@ export function RevenueDimensionTable({
           </TableHeader>
           <TableBody>
             {data.map((row, index) => (
-              <TableRow 
+              <TableRow
                 key={index}
-                className={onDimensionClick ? "cursor-pointer hover:bg-muted-50" : ""}
+                className={onDimensionClick ? 'cursor-pointer hover:bg-muted-50' : ''}
                 onClick={() => onDimensionClick && onDimensionClick(row.dimension, dimensionType)}
               >
-                <TableCell className="font-medium">
-                  {row.dimension || "Unspecified"}
-                </TableCell>
+                <TableCell className="font-medium">{row.dimension || 'Unspecified'}</TableCell>
                 <TableCell className="text-right font-medium">
                   {formatCurrency(row.amount)}
                 </TableCell>
-                <TableCell className="text-right">
-                  {row.percentage.toFixed(1)}%
-                </TableCell>
+                <TableCell className="text-right">{row.percentage.toFixed(1)}%</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -79,13 +82,13 @@ export function RevenueDimensionTable({
             <TabsTrigger value="channel">Channel</TabsTrigger>
           </TabsList>
           <TabsContent value="product" className="mt-4">
-            {renderTable(productData, "product")}
+            {renderTable(productData, 'product')}
           </TabsContent>
           <TabsContent value="region" className="mt-4">
-            {renderTable(regionData, "region")}
+            {renderTable(regionData, 'region')}
           </TabsContent>
           <TabsContent value="channel" className="mt-4">
-            {renderTable(channelData, "channel")}
+            {renderTable(channelData, 'channel')}
           </TabsContent>
         </Tabs>
       </CardContent>

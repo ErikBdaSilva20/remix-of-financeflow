@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRevenueSources, useExpenseCategories, useFinancialMetrics } from "./useFinancialData";
 import { useAccountingSettings } from "./useAccountingSettings";
-import { supabase } from "@/integrations/supabase/client";
+import { listFxRates } from "@/lib/data/fx_rates.repo";
+import { listInvoices } from "@/lib/data/invoices.repo";
+import { listExpensesNew } from "@/lib/data/expenses_new.repo";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 
 export interface ProfitabilityMetrics {
@@ -195,180 +197,103 @@ export function formatChange(change: number): string {
 
 // Hook for margin trends time series with dynamic granularity
 export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date; to?: Date }, product?: string, region?: string, currency?: string }) {
-  const { data: settings } = useAccountingSettings();
-  const basis = settings?.basis || 'accrual';
   const dateRange = filters?.dateRange;
   const currency = filters?.currency || 'USD';
 
   return useQuery({
-    queryKey: ["margin-trends-timeseries", basis, filters],
+    queryKey: ["margin-trends-timeseries", filters],
     queryFn: async () => {
-      // Determine date range
       const today = new Date();
       const startDate = dateRange?.from || startOfMonth(subMonths(today, 6));
       const endDate = dateRange?.to || endOfMonth(today);
+      const startStr = startDate.toISOString().split('T')[0];
+      const endStr = endDate.toISOString().split('T')[0];
 
-      // Fetch FX rates for the date range
-      const { data: fxRates, error: fxError } = await supabase
-        .from("fx_rates")
-        .select("rate_to_base, currency, date")
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
-
-      if (fxError) throw fxError;
+      const [fxRates, allInvoices, allExpenses] = await Promise.all([
+        listFxRates(),
+        listInvoices(),
+        listExpensesNew(),
+      ]);
 
       // Build FX lookup map by currency and date
       const fxMap: Record<string, Record<string, number>> = {};
-      fxRates?.forEach((rate) => {
-        if (!fxMap[rate.currency]) {
-          fxMap[rate.currency] = {};
-        }
-        if (!fxMap[rate.currency][rate.date]) {
-          fxMap[rate.currency][rate.date] = rate.rate_to_base;
-        }
+      fxRates.forEach((rate) => {
+        if (!fxMap[rate.currency]) fxMap[rate.currency] = {};
+        if (!fxMap[rate.currency][rate.date]) fxMap[rate.currency][rate.date] = rate.rate_to_base;
       });
 
-      // Helper to get FX rate for a specific date
       const getFxRate = (targetCurrency: string, date: string): number => {
         if (targetCurrency === 'USD') return 1;
         if (!fxMap[targetCurrency]) return 1;
-        
-        // Try exact date match
-        if (fxMap[targetCurrency][date]) {
-          return fxMap[targetCurrency][date];
-        }
-        
-        // Find closest prior date
-        const sortedDates = Object.keys(fxMap[targetCurrency]).sort().reverse();
-        const priorDate = sortedDates.find(d => d <= date);
-        
-        return priorDate ? fxMap[targetCurrency][priorDate] : 1;
+        if (fxMap[targetCurrency][date]) return fxMap[targetCurrency][date];
+        const sorted = Object.keys(fxMap[targetCurrency]).sort().reverse();
+        const prior = sorted.find(d => d <= date);
+        return prior ? fxMap[targetCurrency][prior] : 1;
       };
 
-      // Helper to convert amount
       const convertAmount = (amount: number, fromCurrency: string, date: string): number => {
         if (fromCurrency === currency) return amount;
-        
         const fromRate = fromCurrency === 'USD' ? 1 : getFxRate(fromCurrency, date);
         const toRate = currency === 'USD' ? 1 : getFxRate(currency, date);
-        
-        const amountInBase = amount * fromRate;
-        return amountInBase / toRate;
+        return (amount * fromRate) / toRate;
       };
 
-      const tableName = basis === 'cash' ? 'demo_baseline_invoices' : 'facts_revenue_daily';
-      const dateColumn = basis === 'cash' ? 'issue_date' : 'date';
+      // Filter invoices by date range and optional product (region not in invoices schema)
+      const revenueData = allInvoices.filter(inv => {
+        if (inv.issue_date < startStr || inv.issue_date > endStr) return false;
+        if (filters?.product && inv.product_id !== filters.product) return false;
+        return true;
+      });
 
-      let revenueQuery = supabase
-        .from(tableName)
-        .select("*")
-        .gte(dateColumn, startDate.toISOString().split('T')[0])
-        .lte(dateColumn, endDate.toISOString().split('T')[0]);
+      if (revenueData.length === 0) return [];
 
-      // Apply segment filters
-      if (filters?.product) {
-        revenueQuery = revenueQuery.eq("product_id", filters.product);
-      }
-      if (filters?.region) {
-        revenueQuery = revenueQuery.eq("region", filters.region);
-      }
+      const expenseData = allExpenses.filter(exp => exp.date >= startStr && exp.date <= endStr);
 
-      const { data: revenueData, error: revenueError } = await revenueQuery;
-
-      let expenseQuery = supabase
-        .from("facts_expenses_daily")
-        .select("date, category, vendor, amount")
-        .gte("date", startDate.toISOString().split('T')[0])
-        .lte("date", endDate.toISOString().split('T')[0]);
-
-      const { data: expenseData, error: expenseError } = await expenseQuery;
-
-      if (revenueError) throw revenueError;
-      if (expenseError) throw expenseError;
-
-      if (!revenueData || revenueData.length === 0) {
-        return [];
-      }
-
-      // Determine granularity based on date range
-      const dateRangeDays = dateRange?.from && dateRange?.to 
+      const dateRangeDays = dateRange?.from && dateRange?.to
         ? Math.abs((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24))
-        : revenueData.length > 0 
-          ? Math.abs((new Date((revenueData[revenueData.length - 1] as any)[dateColumn]).getTime() - new Date((revenueData[0] as any)[dateColumn]).getTime()) / (1000 * 60 * 60 * 24))
+        : revenueData.length > 0
+          ? Math.abs((new Date(revenueData[revenueData.length - 1].issue_date).getTime() - new Date(revenueData[0].issue_date).getTime()) / (1000 * 60 * 60 * 24))
           : 0;
-      
       const useDailyGranularity = dateRangeDays <= 30;
 
-      // Aggregate revenue by period, converting at transaction date
-      const revenueByPeriod = revenueData.reduce((acc: any, row: any) => {
-        const dateObj = new Date(row[dateColumn] + 'T00:00:00');
-        const key = useDailyGranularity 
-          ? format(dateObj, "MMM dd")
-          : format(dateObj, "MMM yyyy");
-        const dateKey = useDailyGranularity
-          ? format(dateObj, "yyyy-MM-dd")
-          : format(dateObj, "yyyy-MM");
-        
-        if (!acc[key]) {
-          acc[key] = { period: key, dateKey, revenue: 0 };
-        }
-        // Handle both cash and accrual basis and convert at transaction date
-        const revenueAmount = basis === 'cash' ? (row.amount_total || 0) : (row.amount_accrual || 0);
-        const convertedRevenue = convertAmount(revenueAmount, 'USD', row[dateColumn]);
-        acc[key].revenue += convertedRevenue;
-        return acc;
-      }, {});
+      const revenueByPeriod: Record<string, { period: string; dateKey: string; revenue: number }> = {};
+      revenueData.forEach((row) => {
+        const dateObj = new Date(row.issue_date + 'T00:00:00');
+        const key = useDailyGranularity ? format(dateObj, "MMM dd") : format(dateObj, "MMM yyyy");
+        const dateKey = useDailyGranularity ? format(dateObj, "yyyy-MM-dd") : format(dateObj, "yyyy-MM");
+        if (!revenueByPeriod[key]) revenueByPeriod[key] = { period: key, dateKey, revenue: 0 };
+        revenueByPeriod[key].revenue += convertAmount(row.amount_total, 'USD', row.issue_date);
+      });
 
-      // Aggregate expenses by period, converting at transaction date
-      const expensesByPeriod = (expenseData || []).reduce((acc: any, row) => {
+      const expensesByPeriod: Record<string, { cogs: number; opex: number }> = {};
+      expenseData.forEach((row) => {
         const dateObj = new Date(row.date + 'T00:00:00');
-        const key = useDailyGranularity 
-          ? format(dateObj, "MMM dd")
-          : format(dateObj, "MMM yyyy");
-        const dateKey = useDailyGranularity
-          ? format(dateObj, "yyyy-MM-dd")
-          : format(dateObj, "yyyy-MM");
-        
-        if (!acc[key]) {
-          acc[key] = { period: key, dateKey, cogs: 0, opex: 0 };
-        }
-        
+        const key = useDailyGranularity ? format(dateObj, "MMM dd") : format(dateObj, "MMM yyyy");
+        if (!expensesByPeriod[key]) expensesByPeriod[key] = { cogs: 0, opex: 0 };
         const category = (row.category || '').toLowerCase();
-        const convertedExpense = convertAmount(row.amount || 0, 'USD', row.date);
+        const converted = convertAmount(row.amount, 'USD', row.date);
         if (category.includes('cogs') || category.includes('cost of goods')) {
-          acc[key].cogs += convertedExpense;
+          expensesByPeriod[key].cogs += converted;
         } else {
-          acc[key].opex += convertedExpense;
+          expensesByPeriod[key].opex += converted;
         }
-        return acc;
-      }, {});
+      });
 
-      // Combine and calculate margins
-      const marginData: any[] = [];
-      Object.keys(revenueByPeriod).forEach(key => {
+      const marginData: MarginTrendTimeSeries[] = Object.keys(revenueByPeriod).map(key => {
         const revenue = revenueByPeriod[key].revenue;
-        const expenses = expensesByPeriod[key] || { cogs: 0, opex: 0 };
-        const cogs = expenses.cogs;
-        const opex = expenses.opex;
-        
+        const { cogs, opex } = expensesByPeriod[key] || { cogs: 0, opex: 0 };
         const grossProfit = revenue - cogs;
         const operatingProfit = grossProfit - opex;
-        const netProfit = operatingProfit;
-        
-        marginData.push({
+        return {
           period: key,
           dateKey: revenueByPeriod[key].dateKey,
           grossMargin: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
           operatingMargin: revenue > 0 ? (operatingProfit / revenue) * 100 : 0,
-          netMargin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
-        });
+          netMargin: revenue > 0 ? (operatingProfit / revenue) * 100 : 0,
+        };
       });
 
-      // Sort by date and keep dateKey for drill-down functionality
-      const chartData = marginData
-        .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-
-      return chartData as MarginTrendTimeSeries[];
+      return marginData.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
     },
   });
 }

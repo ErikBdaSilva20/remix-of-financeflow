@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/data/client";
+import type { Customer } from "@/lib/data/customers.repo";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -32,15 +33,14 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 
 const invoiceSchema = z.object({
-  customer_id: z.string().min(1, "Customer is required"),
-  issue_date: z.string().min(1, "Issue date is required"),
-  due_date: z.string().min(1, "Due date is required"),
-  amount_total: z.string().min(1, "Amount is required"),
+  customer_id: z.string().min(1, "O cliente é obrigatório"),
+  issue_date: z.string().min(1, "A data de emissão é obrigatória"),
+  due_date: z.string().min(1, "A data de vencimento é obrigatória"),
+  amount_total: z.string().min(1, "O valor é obrigatório"),
   original_currency: z.string().default("USD"),
   status: z.enum(["Draft", "Open", "Paid", "Overdue", "Cancelled"]),
   channel: z.string().optional(),
   product_id: z.string().optional(),
-  region: z.string().optional(),
 });
 
 type InvoiceFormData = z.infer<typeof invoiceSchema>;
@@ -56,15 +56,7 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
 
   const { data: customers } = useQuery({
     queryKey: ["customers"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("customers")
-        .select("id, name")
-        .order("name");
-
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => db.table<Customer>('customers').list(),
   });
 
   const form = useForm<InvoiceFormData>({
@@ -78,43 +70,26 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
       status: "Open",
       channel: "",
       product_id: "",
-      region: "",
     },
   });
 
   const onSubmit = async (data: InvoiceFormData) => {
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error("No company found");
-
       const amountTotal = parseFloat(data.amount_total);
 
-      const { error } = await supabase.from("invoices").insert({
-        company_id: profile.company_id,
+      await db.table('invoices').create({
         customer_id: data.customer_id,
         issue_date: data.issue_date,
         due_date: data.due_date,
         amount_total: amountTotal,
         open_amount: amountTotal,
-        amount_total_base: amountTotal,
         original_amount: amountTotal,
         original_currency: data.original_currency,
         status: data.status,
         channel: data.channel || null,
         product_id: data.product_id || null,
-        region: data.region || null,
       });
-
-      if (error) throw error;
 
       toast.success("Invoice created successfully");
       queryClient.invalidateQueries({ queryKey: ["ar-data"] });
@@ -122,7 +97,6 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
       form.reset();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Error creating invoice:", error);
       const errorMessage = error?.message || "Failed to create invoice";
       toast.error(errorMessage);
     } finally {
@@ -134,9 +108,9 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Invoice</DialogTitle>
+          <DialogTitle>Criar Nova Fatura</DialogTitle>
           <DialogDescription>
-            Add a new invoice to track accounts receivable
+            Adicione uma nova fatura para acompanhar as contas a receber
           </DialogDescription>
         </DialogHeader>
 
@@ -147,11 +121,11 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
               name="customer_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer</FormLabel>
+                  <FormLabel>Cliente</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
+                        <SelectValue placeholder="Selecione um cliente" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -173,7 +147,7 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
                 name="issue_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Issue Date</FormLabel>
+                    <FormLabel>Data de Emissão</FormLabel>
                     <FormControl>
                       <Input 
                         type="date" 
@@ -191,7 +165,7 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
                 name="due_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Due Date</FormLabel>
+                    <FormLabel>Data de Vencimento</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -207,7 +181,7 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
                 name="amount_total"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>Valor</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" placeholder="0.00" {...field} />
                     </FormControl>
@@ -221,7 +195,7 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
                 name="original_currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Currency</FormLabel>
+                    <FormLabel>Moeda</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -254,11 +228,11 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Open">Open</SelectItem>
-                      <SelectItem value="Paid">Paid</SelectItem>
-                      <SelectItem value="Overdue">Overdue</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                      <SelectItem value="Draft">Rascunho</SelectItem>
+                      <SelectItem value="Open">Aberta</SelectItem>
+                      <SelectItem value="Paid">Paga</SelectItem>
+                      <SelectItem value="Overdue">Atrasada</SelectItem>
+                      <SelectItem value="Cancelled">Cancelada</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -266,15 +240,15 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
               )}
             />
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="channel"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Channel (Optional)</FormLabel>
+                    <FormLabel>Canal (Opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Online" {...field} />
+                      <Input placeholder="ex: Online" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -286,23 +260,9 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
                 name="product_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Product ID (Optional)</FormLabel>
+                    <FormLabel>ID do Produto (Opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., PROD-001" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="region"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Region (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., North America" {...field} />
+                      <Input placeholder="ex: PROD-001" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -317,10 +277,10 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Invoice"}
+                {isSubmitting ? "Criando..." : "Criar Fatura"}
               </Button>
             </div>
           </form>

@@ -20,98 +20,98 @@ const Features = () => {
   const features = [
     {
       icon: TrendingUp,
-      title: "Advanced Analytics",
-      description: "Get deep insights into your financial performance with AI-powered analytics",
+      title: "Análise Avançada",
+      description: "Obtenha insights profundos sobre seu desempenho financeiro com análises baseadas em IA",
       status: "available",
-      category: "Analytics"
+      category: "Análise"
     },
     {
       icon: PieChart,
-      title: "Interactive Dashboards",
-      description: "Customizable dashboards with real-time data visualization",
+      title: "Painéis Interativos",
+      description: "Painéis personalizáveis com visualização de dados em tempo real",
       status: "available",
-      category: "Visualization"
+      category: "Visualização"
     },
     {
       icon: Calculator,
-      title: "Financial Forecasting",
-      description: "Predict future trends and plan your financial strategy",
+      title: "Projeções Financeiras",
+      description: "Preveja tendências futuras e planeje sua estratégia financeira",
       status: "coming-soon",
-      category: "Planning"
+      category: "Planejamento"
     },
     {
       icon: FileBarChart,
-      title: "Automated Reports",
-      description: "Generate comprehensive financial reports automatically",
+      title: "Relatórios Automatizados",
+      description: "Gere relatórios financeiros abrangentes automaticamente",
       status: "available",
-      category: "Reports"
+      category: "Relatórios"
     },
     {
       icon: Bell,
-      title: "Smart Notifications",
-      description: "Get alerts for important financial events and milestones",
+      title: "Notificações Inteligentes",
+      description: "Receba alertas de eventos financeiros importantes e metas",
       status: "beta",
-      category: "Alerts"
+      category: "Alertas"
     },
     {
       icon: Smartphone,
-      title: "Mobile App",
-      description: "Access your financial data on-the-go with our mobile application",
+      title: "Aplicativo Móvel",
+      description: "Acesse seus dados financeiros de qualquer lugar com nosso aplicativo móvel",
       status: "coming-soon",
-      category: "Mobile"
+      category: "Móvel"
     },
     {
       icon: Shield,
-      title: "Bank-Grade Security",
-      description: "Enterprise-level security to protect your sensitive financial data",
+      title: "Segurança de Nível Bancário",
+      description: "Segurança de nível corporativo para proteger seus dados financeiros confidenciais",
       status: "available",
-      category: "Security"
+      category: "Segurança"
     },
     {
       icon: CloudUpload,
-      title: "Cloud Backup",
-      description: "Automatic backup and sync across all your devices",
+      title: "Backup em Nuvem",
+      description: "Backup automático e sincronização em todos os seus dispositivos",
       status: "available",
-      category: "Storage"
+      category: "Armazenamento"
     },
     {
       icon: Brain,
-      title: "AI Insights",
-      description: "Machine learning algorithms to identify patterns and opportunities",
+      title: "Insights de IA",
+      description: "Algoritmos de aprendizado de máquina para identificar padrões e oportunidades",
       status: "beta",
-      category: "AI"
+      category: "IA"
     },
     {
       icon: Layers,
-      title: "Multi-Currency Support",
-      description: "Handle multiple currencies with real-time exchange rates",
+      title: "Suporte Multi-Moedas",
+      description: "Gerencie múltiplas moedas com taxas de câmbio em tempo real",
       status: "coming-soon",
-      category: "International"
+      category: "Internacional"
     },
     {
       icon: Target,
-      title: "Goal Tracking",
-      description: "Set and track your financial goals with progress monitoring",
+      title: "Acompanhamento de Metas",
+      description: "Defina e acompanhe suas metas financeiras com monitoramento de progresso",
       status: "available",
-      category: "Planning"
+      category: "Planejamento"
     },
     {
       icon: Zap,
-      title: "API Integration",
-      description: "Connect with 500+ financial institutions and services",
+      title: "Integração de API",
+      description: "Conecte-se com mais de 500 instituições e serviços financeiros",
       status: "available",
-      category: "Integration"
+      category: "Integração"
     }
   ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "available":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Available</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Disponível</Badge>;
       case "beta":
         return <Badge className="bg-primary-light text-primary hover:bg-primary-light">Beta</Badge>;
       case "coming-soon":
-        return <Badge className="bg-muted text-muted-foreground hover:bg-muted">Coming Soon</Badge>;
+        return <Badge className="bg-muted text-muted-foreground hover:bg-muted">Em breve</Badge>;
       default:
         return null;
     }
@@ -122,9 +122,9 @@ const Features = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl tracking-tight">Features</h1>
+        <h1 className="text-3xl tracking-tight">Recursos</h1>
         <p className="text-muted-foreground">
-          Discover all the powerful features that make FinanceFlow the best choice for your financial management
+          Descubra todos os recursos poderosos que tornam o FinanceFlow a melhor escolha para sua gestão financeira
         </p>
       </div>
 
@@ -132,19 +132,19 @@ const Features = () => {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Features</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Recursos</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{features.length}</div>
             <p className="text-xs text-muted-foreground">
-              Across {categories.length} categories
+              Em {categories.length} categorias
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Now</CardTitle>
+            <CardTitle className="text-sm font-medium">Disponíveis Agora</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -152,13 +152,13 @@ const Features = () => {
               {features.filter(f => f.status === "available").length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Ready to use
+              Pronto para uso
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Development</CardTitle>
+            <CardTitle className="text-sm font-medium">Em Desenvolvimento</CardTitle>
             <PieChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -166,7 +166,7 @@ const Features = () => {
               {features.filter(f => f.status === "coming-soon" || f.status === "beta").length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Coming soon
+              Em breve
             </p>
           </CardContent>
         </Card>
@@ -200,8 +200,8 @@ const Features = () => {
                 disabled={feature.status === "coming-soon"}
                 className="w-full"
               >
-                {feature.status === "available" ? "Use Now" : 
-                 feature.status === "beta" ? "Try Beta" : "Coming Soon"}
+                {feature.status === "available" ? "Usar Agora" : 
+                 feature.status === "beta" ? "Testar Beta" : "Em Breve"}
               </Button>
             </CardContent>
           </Card>
@@ -211,15 +211,15 @@ const Features = () => {
       {/* Feature Request */}
       <Card>
         <CardHeader>
-          <CardTitle>Request a Feature</CardTitle>
+          <CardTitle>Solicitar um Recurso</CardTitle>
           <CardDescription>
-            Have an idea for a new feature? We'd love to hear from you!
+            Tem uma ideia de recurso novo? Gostaríamos muito de ouvir você!
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex space-x-4">
-            <Button>Submit Feature Request</Button>
-            <Button variant="outline">Join Beta Program</Button>
+            <Button>Enviar Solicitação de Recurso</Button>
+            <Button variant="outline">Participar do Programa Beta</Button>
           </div>
         </CardContent>
       </Card>

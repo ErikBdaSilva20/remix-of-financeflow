@@ -102,9 +102,9 @@ export function ContactsDialog({ open, onOpenChange }: ContactsDialogProps) {
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Contacts & Address Book</DialogTitle>
+            <DialogTitle>Contatos & Cadastros</DialogTitle>
             <DialogDescription>
-              Manage your contacts and keep track of important connections.
+              Gerencie seus contatos e acompanhe conexões importantes.
             </DialogDescription>
           </DialogHeader>
 
@@ -112,7 +112,7 @@ export function ContactsDialog({ open, onOpenChange }: ContactsDialogProps) {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search contacts..."
+                placeholder="Buscar contatos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -120,24 +120,24 @@ export function ContactsDialog({ open, onOpenChange }: ContactsDialogProps) {
             </div>
             <Button onClick={() => setFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Contact
+              Adicionar Contato
             </Button>
           </div>
 
           <div className="flex-1 overflow-auto">
             {isLoading ? (
               <div className="flex items-center justify-center h-40">
-                <p className="text-muted-foreground">Loading contacts...</p>
+                <p className="text-muted-foreground">Carregando contatos...</p>
               </div>
             ) : filteredContacts.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-center">
                 <p className="text-muted-foreground mb-2">
-                  {searchQuery ? "No contacts found." : "No contacts yet."}
+                  {searchQuery ? "Nenhum contato encontrado." : "Nenhum contato ainda."}
                 </p>
                 {!searchQuery && (
                   <Button variant="outline" onClick={() => setFormOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add your first contact
+                    Adicionar seu primeiro contato
                   </Button>
                 )}
               </div>
@@ -145,11 +145,11 @@ export function ContactsDialog({ open, onOpenChange }: ContactsDialogProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Contato</TableHead>
+                    <TableHead>E-mail</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Endereço</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -207,20 +207,20 @@ export function ContactsDialog({ open, onOpenChange }: ContactsDialogProps) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Contato</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this contact? This action cannot be
-              undone.
+              Tem certeza que deseja excluir este contato? Esta ação não pode ser
+              desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive-hover"
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

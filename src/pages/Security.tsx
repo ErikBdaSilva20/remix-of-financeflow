@@ -13,35 +13,35 @@ const Security = () => {
   const securityFeatures = [
     {
       icon: Shield,
-      title: "End-to-End Encryption",
-      description: "All your financial data is encrypted in transit and at rest",
+      title: "Criptografia de Ponta a Ponta",
+      description: "Todos os seus dados financeiros são criptografados em trânsito e em repouso",
       status: "active",
     },
     {
       icon: Lock,
-      title: "Two-Factor Authentication",
-      description: "Additional security layer for your account access",
+      title: "Autenticação de Dois Fatores",
+      description: "Camada adicional de segurança para o acesso à sua conta",
       status: "active",
     },
     {
       icon: Eye,
-      title: "Privacy Controls",
-      description: "Control who can access your financial information",
+      title: "Controles de Privacidade",
+      description: "Controle quem pode acessar suas informações financeiras",
       status: "active",
     },
     {
       icon: Key,
-      title: "API Security",
-      description: "Secure API keys management for connected services",
+      title: "Segurança de API",
+      description: "Gerenciamento seguro de chaves de API para serviços conectados",
       status: "active",
     },
   ];
 
   const securityStats = [
-    { label: "Security Score", value: "95%", status: "good" },
-    { label: "Last Security Scan", value: "2 hours ago", status: "good" },
-    { label: "Vulnerabilities", value: "0", status: "good" },
-    { label: "Connected Apps", value: "3", status: "warning" },
+    { label: "Pontuação de Segurança", value: "95%", status: "good" },
+    { label: "Última Verificação", value: "há 2 horas", status: "good" },
+    { label: "Vulnerabilidades", value: "0", status: "good" },
+    { label: "Apps Conectados", value: "3", status: "warning" },
   ];
 
   return (
@@ -54,9 +54,9 @@ const Security = () => {
       
       <div className="space-y-6 p-4">
       <div>
-        <h1 className="text-3xl tracking-tight">Security</h1>
+        <h1 className="text-3xl tracking-tight">Segurança</h1>
         <p className="text-muted-foreground">
-          Monitor and manage your account security settings
+          Monitore e gerencie as configurações de segurança da sua conta
         </p>
       </div>
 
@@ -84,9 +84,9 @@ const Security = () => {
       {/* Security Features */}
       <Card>
         <CardHeader>
-          <CardTitle>Security Features</CardTitle>
+          <CardTitle>Recursos de Segurança</CardTitle>
           <CardDescription>
-            Your account is protected by these security measures
+            Sua conta está protegida por estas medidas de segurança
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -104,7 +104,7 @@ const Security = () => {
                       {feature.title}
                     </h3>
                     <Badge variant="secondary" className="text-xs">
-                      Active
+                      Ativo
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -123,9 +123,9 @@ const Security = () => {
       {/* Recent Security Activity */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Security Activity</CardTitle>
+          <CardTitle>Atividade de Segurança Recente</CardTitle>
           <CardDescription>
-            Latest security events and login activity
+            Últimos eventos de segurança e atividade de login
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -136,10 +136,10 @@ const Security = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">
-                  Successful login from new device
+                  Login bem-sucedido a partir de um novo dispositivo
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  MacBook Pro • 2 hours ago
+                  MacBook Pro • há 2 horas
                 </p>
               </div>
             </div>
@@ -149,10 +149,10 @@ const Security = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">
-                  Password changed successfully
+                  Senha alterada com sucesso
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Yesterday at 3:45 PM
+                  Ontem às 15:45
                 </p>
               </div>
             </div>
@@ -162,10 +162,10 @@ const Security = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">
-                  Two-factor authentication enabled
+                  Autenticação de dois fatores ativada
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  3 days ago
+                  há 3 dias
                 </p>
               </div>
             </div>

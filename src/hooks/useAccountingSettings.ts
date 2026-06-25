@@ -1,27 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { listAccountingSettings, updateAccountingSettings } from "@/lib/data/accounting_settings.repo";
+import type { AccountingSettings } from "@/lib/data/accounting_settings.repo";
 
-export interface AccountingSettings {
-  id: string;
-  company_id: string;
-  basis: 'accrual' | 'cash';
-  base_currency: string;
-  timezone: string;
-  allow_future_dates: boolean;
-}
+export type { AccountingSettings };
 
 export function useAccountingSettings() {
   return useQuery({
     queryKey: ["accounting-settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("accounting_settings")
-        .select("*")
-        .single();
-
-      if (error) throw error;
-      return data as AccountingSettings;
+      const rows = await listAccountingSettings();
+      return rows[0] ?? null;
     },
   });
 }
@@ -32,27 +21,9 @@ export function useUpdateAccountingBasis() {
 
   return useMutation({
     mutationFn: async (basis: 'accrual' | 'cash') => {
-      // First get the user's company_id from their profile
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error('Company not found');
-
-      const { data, error } = await supabase
-        .from("accounting_settings")
-        .update({ basis })
-        .eq('company_id', profile.company_id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const rows = await listAccountingSettings();
+      if (!rows[0]) throw new Error('Settings not found');
+      return updateAccountingSettings(rows[0].id, { basis });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounting-settings"] });
@@ -60,17 +31,10 @@ export function useUpdateAccountingBasis() {
       queryClient.invalidateQueries({ queryKey: ["expense-data"] });
       queryClient.invalidateQueries({ queryKey: ["cashflow-data"] });
       queryClient.invalidateQueries({ queryKey: ["profitability-data"] });
-      toast({
-        title: "Accounting basis updated",
-        description: "Your financial data has been recalculated.",
-      });
+      toast({ title: "Accounting basis updated", description: "Your financial data has been recalculated." });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update accounting basis",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to update accounting basis", variant: "destructive" });
     },
   });
 }

@@ -9,9 +9,9 @@ interface TimePeriodSelectorProps {
   className?: string;
 }
 const periodLabels: Record<TimePeriod, string> = {
-  month: 'This Month',
-  quarter: 'This Quarter',
-  year: 'This Year'
+  month: 'Este Mês',
+  quarter: 'Este Trimestre',
+  year: 'Este Ano'
 };
 const periodOptions: {
   value: TimePeriod;
@@ -19,16 +19,16 @@ const periodOptions: {
   description: string;
 }[] = [{
   value: 'month',
-  label: 'Monthly',
-  description: 'Current month data'
+  label: 'Mensal',
+  description: 'Dados do mês atual'
 }, {
   value: 'quarter',
-  label: 'Quarterly',
-  description: 'Current quarter data'
+  label: 'Trimestral',
+  description: 'Dados do trimestre atual'
 }, {
   value: 'year',
-  label: 'Yearly',
-  description: 'Current year data'
+  label: 'Anual',
+  description: 'Dados do ano atual'
 }];
 export function TimePeriodSelector({
   selectedPeriod,
@@ -39,7 +39,7 @@ export function TimePeriodSelector({
       <div className="flex items-center justify-between px-0 mx-0">
         <div className="flex items-center gap-2 mx-[16px]">
           <Calendar className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Time Period</span>
+          <span className="text-sm font-medium">Período</span>
         </div>
         
         <DropdownMenu>

@@ -36,33 +36,33 @@ export function NotificationSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Notification Settings</DialogTitle>
+          <DialogTitle>Configurações de Notificação</DialogTitle>
           <DialogDescription>
-            Configure how you want to receive notifications about your financial activities.
+            Configure como você deseja receber notificações sobre suas atividades financeiras.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="email">Endereço de E-mail</Label>
             <Input
               id="email"
               type="email"
-              placeholder="your.email@example.com"
+              placeholder="seu.email@exemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              We'll send notifications to this email address
+              Enviaremos notificações para este endereço de e-mail
             </p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="in-app-notifications">In-App Notifications</Label>
+                <Label htmlFor="in-app-notifications">Notificações no App</Label>
                 <p className="text-sm text-muted-foreground">
-                  Show notifications within the app
+                  Mostrar notificações dentro do aplicativo
                 </p>
               </div>
               <Switch
@@ -74,9 +74,9 @@ export function NotificationSettingsDialog({
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="email-notifications">Email Notifications</Label>
+                <Label htmlFor="email-notifications">Notificações por E-mail</Label>
                 <p className="text-sm text-muted-foreground">
-                  Receive email updates about your account
+                  Receber atualizações por e-mail sobre sua conta
                 </p>
               </div>
               <Switch
@@ -88,9 +88,9 @@ export function NotificationSettingsDialog({
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="transaction-alerts">Transaction Alerts</Label>
+                <Label htmlFor="transaction-alerts">Alertas de Transação</Label>
                 <p className="text-sm text-muted-foreground">
-                  Get instant alerts for all transactions
+                  Receber alertas instantâneos para todas as transações
                 </p>
               </div>
               <Switch
@@ -102,9 +102,9 @@ export function NotificationSettingsDialog({
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="monthly-reports">Monthly Reports</Label>
+                <Label htmlFor="monthly-reports">Relatórios Mensais</Label>
                 <p className="text-sm text-muted-foreground">
-                  Receive monthly financial summaries
+                  Receber resumos financeiros mensais
                 </p>
               </div>
               <Switch
@@ -118,9 +118,9 @@ export function NotificationSettingsDialog({
 
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Cancelar
           </Button>
-          <Button onClick={handleSave}>Save Settings</Button>
+          <Button onClick={handleSave}>Salvar Configurações</Button>
         </div>
       </DialogContent>
     </Dialog>

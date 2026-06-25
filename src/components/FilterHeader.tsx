@@ -47,7 +47,7 @@ const fallbackSegments = {
   regions: ['North America', 'Europe', 'Asia Pacific', 'Latin America', 'Middle East']
 };
 
-const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
+const currencies = ['USD', 'BRL', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
 
 export const FilterHeader: React.FC<FilterHeaderProps> = ({
   filters,
@@ -119,12 +119,12 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
       return `${format(filters.dateRange.from, 'MMM dd')} - ${format(filters.dateRange.to, 'MMM dd, yyyy')}`;
     }
     if (filters.dateRange.from) {
-      return `From ${format(filters.dateRange.from, 'MMM dd, yyyy')}`;
+      return `De ${format(filters.dateRange.from, 'dd/MM/yyyy')}`;
     }
     if (filters.dateRange.to) {
-      return `Until ${format(filters.dateRange.to, 'MMM dd, yyyy')}`;
+      return `Até ${format(filters.dateRange.to, 'dd/MM/yyyy')}`;
     }
-    return 'Select date range';
+    return 'Selecionar período';
   };
 
   return (
@@ -137,7 +137,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filters</span>
+            <span className="text-sm font-medium">Filtros</span>
           </div>
 
           {/* Date Range Picker */}
@@ -154,7 +154,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-[280px] justify-start text-left font-normal",
+                  "w-full sm:w-[280px] justify-start text-left font-normal",
                   (!filters.dateRange.from && !filters.dateRange.to) && "text-muted-foreground"
                 )}
               >
@@ -190,13 +190,13 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
             </PopoverContent>
           </Popover>
 
-          {/* Project Filter */}
+                  {/* Project Filter */}
           <Select value={filters.project || 'all'} onValueChange={(value) => updateFilter('project', value === 'all' ? undefined : value)}>
             <SelectTrigger className="w-[160px] bg-background">
-              <SelectValue placeholder="Project" />
+              <SelectValue placeholder="Projeto" />
             </SelectTrigger>
             <SelectContent className="bg-background border shadow-lg z-50">
-              <SelectItem value="all">All Projects</SelectItem>
+              <SelectItem value="all">Todos os Projetos</SelectItem>
               {segments.projects.map((project) => (
                 <SelectItem key={project} value={project}>{project}</SelectItem>
               ))}
@@ -206,10 +206,10 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
           {/* Department Filter */}
           <Select value={filters.department || 'all'} onValueChange={(value) => updateFilter('department', value === 'all' ? undefined : value)}>
             <SelectTrigger className="w-[160px] bg-background">
-              <SelectValue placeholder="Department" />
+              <SelectValue placeholder="Departamento" />
             </SelectTrigger>
             <SelectContent className="bg-background border shadow-lg z-50">
-              <SelectItem value="all">All Departments</SelectItem>
+              <SelectItem value="all">Todos os Departamentos</SelectItem>
               {segments.departments.map((dept) => (
                 <SelectItem key={dept} value={dept}>{dept}</SelectItem>
               ))}
@@ -219,10 +219,10 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
           {/* Product Filter */}
           <Select value={filters.product || 'all'} onValueChange={(value) => updateFilter('product', value === 'all' ? undefined : value)}>
             <SelectTrigger className="w-[160px] bg-background">
-              <SelectValue placeholder="Product" />
+              <SelectValue placeholder="Produto" />
             </SelectTrigger>
             <SelectContent className="bg-background border shadow-lg z-50">
-              <SelectItem value="all">All Products</SelectItem>
+              <SelectItem value="all">Todos os Produtos</SelectItem>
               {segments.products.map((product) => (
                 <SelectItem key={product} value={product}>{product}</SelectItem>
               ))}
@@ -232,10 +232,10 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
           {/* Region Filter */}
           <Select value={filters.region || 'all'} onValueChange={(value) => updateFilter('region', value === 'all' ? undefined : value)}>
             <SelectTrigger className="w-[160px] bg-background">
-              <SelectValue placeholder="Region" />
+              <SelectValue placeholder="Região" />
             </SelectTrigger>
             <SelectContent className="bg-background border shadow-lg z-50">
-              <SelectItem value="all">All Regions</SelectItem>
+              <SelectItem value="all">Todas as Regiões</SelectItem>
               {segments.regions.map((region) => (
                 <SelectItem key={region} value={region}>{region}</SelectItem>
               ))}
@@ -248,11 +248,11 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
             onValueChange={(value) => updateBasis.mutate(value as 'accrual' | 'cash')}
           >
             <SelectTrigger className="w-[130px] bg-background">
-              <SelectValue placeholder="Basis" />
+              <SelectValue placeholder="Regime" />
             </SelectTrigger>
             <SelectContent className="bg-background border shadow-lg z-50">
-              <SelectItem value="accrual">Accrual</SelectItem>
-              <SelectItem value="cash">Cash</SelectItem>
+              <SelectItem value="accrual">Competência</SelectItem>
+              <SelectItem value="cash">Caixa</SelectItem>
             </SelectContent>
           </Select>
 
@@ -260,7 +260,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
           {showFxCurrency && (
             <Select value={filters.currency || 'USD'} onValueChange={(value) => updateFilter('currency', value)}>
               <SelectTrigger className="w-[100px] bg-background">
-                <SelectValue placeholder="Currency" />
+                <SelectValue placeholder="Moeda" />
               </SelectTrigger>
               <SelectContent className="bg-background border shadow-lg z-50">
                 {currencies.map((currency) => (
@@ -279,7 +279,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
               className="text-muted-foreground hover:text-foreground"
             >
               <RotateCcw className="w-4 h-4 mr-1" />
-              Reset
+              Redefinir
             </Button>
           )}
         </div>
@@ -287,7 +287,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
         {/* Active Filter Chips */}
         {getActiveFiltersCount() > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Active filters:</span>
+            <span className="text-xs text-muted-foreground">Filtros ativos:</span>
             
             {(filters.dateRange.from || filters.dateRange.to) && (
               <Badge variant="secondary" className="gap-1">
@@ -303,7 +303,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
 
             {filters.project && (
               <Badge variant="secondary" className="gap-1">
-                Project: {filters.project}
+                Projeto: {filters.project}
                 <button
                   onClick={() => removeFilter('project')}
                   className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
@@ -315,7 +315,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
 
             {filters.department && (
               <Badge variant="secondary" className="gap-1">
-                Dept: {filters.department}
+                Depto: {filters.department}
                 <button
                   onClick={() => removeFilter('department')}
                   className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
@@ -327,7 +327,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
 
             {filters.product && (
               <Badge variant="secondary" className="gap-1">
-                Product: {filters.product}
+                Produto: {filters.product}
                 <button
                   onClick={() => removeFilter('product')}
                   className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
@@ -339,7 +339,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
 
             {filters.region && (
               <Badge variant="secondary" className="gap-1">
-                Region: {filters.region}
+                Região: {filters.region}
                 <button
                   onClick={() => removeFilter('region')}
                   className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
@@ -351,7 +351,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
 
             {filters.currency && showFxCurrency && (
               <Badge variant="secondary" className="gap-1">
-                Currency: {filters.currency}
+                Moeda: {filters.currency}
                 <button
                   onClick={() => removeFilter('currency')}
                   className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"

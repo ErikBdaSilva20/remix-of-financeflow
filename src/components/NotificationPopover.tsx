@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 export function NotificationPopover() {
@@ -54,7 +55,7 @@ export function NotificationPopover() {
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0 bg-card z-50" align="end">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="">Notifications</h3>
+          <h3 className="">Notificações</h3>
           <div className="flex gap-2">
             {unread > 0 && (
               <Button 
@@ -63,7 +64,7 @@ export function NotificationPopover() {
                 onClick={markAllAsRead}
                 className="text-xs"
               >
-                Mark all read
+                Marcar todas como lidas
               </Button>
             )}
             {notifications.length > 0 && (
@@ -73,7 +74,7 @@ export function NotificationPopover() {
                 onClick={clearAll}
                 className="text-xs"
               >
-                Clear all
+                Limpar todas
               </Button>
             )}
           </div>
@@ -83,7 +84,7 @@ export function NotificationPopover() {
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <Bell className="h-12 w-12 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No notifications</p>
+              <p className="text-sm text-muted-foreground">Nenhuma notificação</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -121,7 +122,7 @@ export function NotificationPopover() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
+                        {formatDistanceToNow(notification.timestamp, { addSuffix: true, locale: ptBR })}
                       </p>
                     </div>
                     {!notification.read && (

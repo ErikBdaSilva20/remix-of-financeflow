@@ -56,7 +56,7 @@ export function StackedBarChart({
               data={data} 
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
               <XAxis 
                 dataKey={xAxisKey}
                 axisLine={false}

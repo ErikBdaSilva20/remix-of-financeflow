@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { db } from '@/lib/data/client';
+import type { Invoice } from '@/lib/data/invoices.repo';
+import type { Customer } from '@/lib/data/customers.repo';
+import type { Contact } from '@/lib/data/contacts.repo';
+import type { Payment } from '@/lib/data/payments.repo';
 
 export interface SearchResult {
   id: string;
@@ -13,112 +17,41 @@ export interface SearchResult {
 }
 
 export const useGlobalSearch = (searchQuery: string) => {
-  const [isSearching, setIsSearching] = useState(false);
+  const [isSearching] = useState(false);
 
   const { data: results = [], isLoading } = useQuery({
     queryKey: ['global-search', searchQuery],
     queryFn: async (): Promise<SearchResult[]> => {
-      if (!searchQuery || searchQuery.trim().length < 2) {
-        return [];
-      }
+      if (!searchQuery || searchQuery.trim().length < 2) return [];
 
-      setIsSearching(true);
-      const query = searchQuery.toLowerCase().trim();
+      const q = searchQuery.toLowerCase().trim();
+      const [invoices, customers, contacts, payments] = await Promise.all([
+        db.table<Invoice>('invoices').list(),
+        db.table<Customer>('customers').list(),
+        db.table<Contact>('contacts').list(),
+        db.table<Payment>('payments').list(),
+      ]);
+
+      const custMap = new Map(customers.map(c => [c.id, c.name]));
       const allResults: SearchResult[] = [];
 
-      try {
-        // Search invoices
-        const { data: invoices } = await supabase
-          .from('invoices')
-          .select('id, issue_date, amount_total, status, customer_id, customers(name)')
-          .or(`status.ilike.%${query}%,customers.name.ilike.%${query}%`)
-          .limit(5);
+      invoices.filter(i => (custMap.get(i.customer_id ?? '') || '').toLowerCase().includes(q) || i.status.toLowerCase().includes(q))
+        .slice(0, 5).forEach(inv => allResults.push({ id: inv.id, type: 'invoice', title: `Invoice - ${custMap.get(inv.customer_id ?? '') || 'Unknown'}`, subtitle: `${inv.status} • ${inv.issue_date}`, amount: inv.amount_total, status: inv.status, date: inv.issue_date }));
 
-        if (invoices) {
-          invoices.forEach((inv: any) => {
-            allResults.push({
-              id: inv.id,
-              type: 'invoice',
-              title: `Invoice - ${inv.customers?.name || 'Unknown'}`,
-              subtitle: `${inv.status} • ${inv.issue_date}`,
-              amount: inv.amount_total,
-              status: inv.status,
-              date: inv.issue_date,
-            });
-          });
-        }
+      customers.filter(c => c.name.toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q))
+        .slice(0, 5).forEach(c => allResults.push({ id: c.id, type: 'customer', title: c.name, subtitle: c.email || 'Customer' }));
 
-        // Search customers
-        const { data: customers } = await supabase
-          .from('customers')
-          .select('id, name, email')
-          .ilike('name', `%${query}%`)
-          .limit(5);
+      contacts.filter(c => c.name.toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q))
+        .slice(0, 5).forEach(c => allResults.push({ id: c.id, type: 'contact', title: c.name, subtitle: [c.email, c.phone].filter(Boolean).join(' • ') || 'Contact' }));
 
-        if (customers) {
-          customers.forEach((cust) => {
-            allResults.push({
-              id: cust.id,
-              type: 'customer',
-              title: cust.name,
-              subtitle: cust.email || 'Customer',
-            });
-          });
-        }
-
-        // Search contacts
-        const { data: contacts } = await supabase
-          .from('contacts')
-          .select('id, name, email, phone, address')
-          .or(`name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%,address.ilike.%${query}%`)
-          .limit(5);
-
-        if (contacts) {
-          contacts.forEach((contact) => {
-            const details = [contact.email, contact.phone].filter(Boolean).join(' • ');
-            allResults.push({
-              id: contact.id,
-              type: 'contact',
-              title: contact.name,
-              subtitle: details || contact.address || 'Contact',
-            });
-          });
-        }
-
-        // Search payments
-        const { data: payments } = await supabase
-          .from('payments')
-          .select('id, date, amount, status, invoice_id, invoices(customer_id, customers(name))')
-          .or(`status.ilike.%${query}%`)
-          .limit(5);
-
-        if (payments) {
-          payments.forEach((pmt: any) => {
-            allResults.push({
-              id: pmt.id,
-              type: 'payment',
-              title: `Payment - ${pmt.invoices?.customers?.name || 'Unknown'}`,
-              subtitle: `${pmt.status} • ${pmt.date}`,
-              amount: pmt.amount,
-              status: pmt.status,
-              date: pmt.date,
-            });
-          });
-        }
-      } catch (error) {
-        console.error('Search error:', error);
-      } finally {
-        setIsSearching(false);
-      }
+      payments.filter(p => p.status.toLowerCase().includes(q))
+        .slice(0, 5).forEach(p => allResults.push({ id: p.id, type: 'payment', title: `Payment`, subtitle: `${p.status} • ${p.date}`, amount: p.amount, status: p.status, date: p.date }));
 
       return allResults;
     },
     enabled: searchQuery.trim().length >= 2,
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: 30000,
   });
 
-  return {
-    results,
-    isLoading: isLoading || isSearching,
-  };
+  return { results, isLoading: isLoading || isSearching };
 };

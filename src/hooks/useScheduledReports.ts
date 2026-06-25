@@ -1,108 +1,48 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  listScheduledReports,
+  createScheduledReport as apiCreate,
+  updateScheduledReport as apiUpdate,
+  removeScheduledReport,
+} from "@/lib/data/scheduled_reports.repo";
+import type { ScheduledReport, ScheduledReportInsert } from "@/lib/data/scheduled_reports.repo";
 
-export interface ScheduledReport {
-  id: string;
-  company_id: string;
-  report_type: string;
-  report_name: string;
-  frequency: string;
-  next_run_date: string;
-  recipients: string[];
-  format: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export type { ScheduledReport };
+export type ScheduledReportInput = ScheduledReportInsert;
 
-export interface ScheduledReportInput {
-  report_type: string;
-  report_name: string;
-  frequency: string;
-  next_run_date: string;
-  recipients: string[];
-  format: string;
-  is_active?: boolean;
-}
-
+// A configuração do agendamento é persistida via CRUD no gateway.
+// A ENTREGA automática (gerar + enviar no horário) é cron = extensão Onda 2.
+// Ver Importantdoc §A3 e TAREFAS-MIGRACAO-TEMPLATE.md E5.4.
 export const useScheduledReports = () => {
   const queryClient = useQueryClient();
 
-  const { data: scheduledReports, isLoading } = useQuery({
+  const { data: scheduledReports = [], isLoading } = useQuery({
     queryKey: ["scheduled-reports"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
-        .from("scheduled_reports")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as ScheduledReport[];
+      const rows = await listScheduledReports();
+      return [...rows].sort((a, b) =>
+        (a.next_run_date ?? "").localeCompare(b.next_run_date ?? "")
+      );
     },
   });
 
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["scheduled-reports"] });
+
   const createScheduledReport = useMutation({
-    mutationFn: async (input: ScheduledReportInput) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile) throw new Error("Profile not found");
-
-      const { data, error } = await supabase
-        .from("scheduled_reports")
-        .insert({
-          ...input,
-          company_id: profile.company_id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduled-reports"] });
-    },
+    mutationFn: (input: ScheduledReportInput) => apiCreate(input),
+    onSuccess: invalidate,
   });
 
   const updateScheduledReport = useMutation({
-    mutationFn: async ({ id, ...input }: Partial<ScheduledReportInput> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("scheduled_reports")
-        .update(input)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduled-reports"] });
-    },
+    mutationFn: ({ id, ...patch }: { id: string } & Partial<ScheduledReportInput>) =>
+      apiUpdate(id, patch),
+    onSuccess: invalidate,
   });
 
   const deleteScheduledReport = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("scheduled_reports")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduled-reports"] });
-    },
+    mutationFn: (id: string) => removeScheduledReport(id),
+    onSuccess: invalidate,
   });
 
   return {

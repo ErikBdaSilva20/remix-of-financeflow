@@ -16,10 +16,17 @@ const segmentIcons = {
 };
 
 const segmentLabels = {
-  project: "Projects",
-  department: "Departments",
-  product: "Products",
-  region: "Regions",
+  project: "Projetos",
+  department: "Departamentos",
+  product: "Produtos",
+  region: "Regiões",
+};
+
+const segmentSingularPt = {
+  project: "projeto",
+  department: "departamento",
+  product: "produto",
+  region: "região",
 };
 
 export function FilterSegmentsSettings() {
@@ -50,7 +57,7 @@ export function FilterSegmentsSettings() {
       <div className="space-y-4">
         <div className="flex gap-2">
           <Input
-            placeholder={`Add new ${type}...`}
+            placeholder={`Adicionar novo ${segmentSingularPt[type]}...`}
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
@@ -58,7 +65,7 @@ export function FilterSegmentsSettings() {
           />
           <Button onClick={handleAdd} disabled={isCreating || !newValue.trim()}>
             <Plus className="w-4 h-4 mr-2" />
-            Add
+            Adicionar
           </Button>
         </div>
 
@@ -69,7 +76,7 @@ export function FilterSegmentsSettings() {
             ))
           ) : typeSegments.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4">
-              No {segmentLabels[type].toLowerCase()} added yet. Add your first one above.
+              Nenhum {segmentLabels[type].toLowerCase()} adicionado ainda. Adicione o seu primeiro acima.
             </p>
           ) : (
             typeSegments.map((segment) => (
@@ -93,9 +100,9 @@ export function FilterSegmentsSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Filter Segments</CardTitle>
+        <CardTitle>Segmentos de Filtro</CardTitle>
         <CardDescription>
-          Manage the available options for filters across all dashboards. Add custom projects, departments, products, and regions.
+          Gerencie as opções disponíveis para filtros em todos os painéis. Adicione projetos, departamentos, produtos e regiões personalizados.
         </CardDescription>
       </CardHeader>
       <CardContent>
