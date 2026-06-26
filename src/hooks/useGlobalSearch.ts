@@ -36,16 +36,16 @@ export const useGlobalSearch = (searchQuery: string) => {
       const allResults: SearchResult[] = [];
 
       invoices.filter(i => (custMap.get(i.customer_id ?? '') || '').toLowerCase().includes(q) || i.status.toLowerCase().includes(q))
-        .slice(0, 5).forEach(inv => allResults.push({ id: inv.id, type: 'invoice', title: `Invoice - ${custMap.get(inv.customer_id ?? '') || 'Unknown'}`, subtitle: `${inv.status} • ${inv.issue_date}`, amount: inv.amount_total, status: inv.status, date: inv.issue_date }));
+        .slice(0, 5).forEach(inv => allResults.push({ id: inv.id, type: 'invoice', title: `Fatura - ${custMap.get(inv.customer_id ?? '') || 'Desconhecido'}`, subtitle: `${inv.status} • ${inv.issue_date}`, amount: inv.amount_total, status: inv.status, date: inv.issue_date }));
 
       customers.filter(c => c.name.toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q))
-        .slice(0, 5).forEach(c => allResults.push({ id: c.id, type: 'customer', title: c.name, subtitle: c.email || 'Customer' }));
+        .slice(0, 5).forEach(c => allResults.push({ id: c.id, type: 'customer', title: c.name, subtitle: c.email || 'Cliente' }));
 
       contacts.filter(c => c.name.toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q))
-        .slice(0, 5).forEach(c => allResults.push({ id: c.id, type: 'contact', title: c.name, subtitle: [c.email, c.phone].filter(Boolean).join(' • ') || 'Contact' }));
+        .slice(0, 5).forEach(c => allResults.push({ id: c.id, type: 'contact', title: c.name, subtitle: [c.email, c.phone].filter(Boolean).join(' • ') || 'Contato' }));
 
       payments.filter(p => p.status.toLowerCase().includes(q))
-        .slice(0, 5).forEach(p => allResults.push({ id: p.id, type: 'payment', title: `Payment`, subtitle: `${p.status} • ${p.date}`, amount: p.amount, status: p.status, date: p.date }));
+        .slice(0, 5).forEach(p => allResults.push({ id: p.id, type: 'payment', title: `Pagamento`, subtitle: `${p.status} • ${p.date}`, amount: p.amount, status: p.status, date: p.date }));
 
       return allResults;
     },

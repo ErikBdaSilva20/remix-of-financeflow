@@ -98,12 +98,12 @@ export function useRecentActivity() {
       const activities = [
         ...invoices.sort((a,b)=>b.issue_date.localeCompare(a.issue_date)).slice(0,5).map(inv => ({
           id: inv.id, type: 'invoice' as const, date: inv.issue_date,
-          amount: inv.original_amount ?? inv.amount_total, currency: inv.original_currency || 'USD',
+          amount: inv.original_amount ?? inv.amount_total, currency: inv.original_currency || 'BRL',
           status: inv.status, customerName: custMap.get(inv.customer_id ?? '') || 'Unknown Customer',
         })),
         ...payments.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(pmt => ({
           id: pmt.id, type: 'payment' as const, date: pmt.date,
-          amount: pmt.original_amount ?? pmt.amount, currency: pmt.original_currency || 'USD',
+          amount: pmt.original_amount ?? pmt.amount, currency: pmt.original_currency || 'BRL',
           status: pmt.status, customerName: 'Unknown Customer',
         })),
       ];
@@ -142,7 +142,7 @@ export function useARDetailedData(dateRange?: { from?: Date; to?: Date }, sortBy
           const daysOutstanding = Math.ceil((today.getTime() - new Date(inv.due_date).getTime()) / 86400000);
           return { id: inv.id, invoiceNumber: inv.id.slice(0,8), customer: custMap.get(inv.customer_id ?? '') || 'Unknown',
             issueDate: inv.issue_date, dueDate: inv.due_date, status: inv.status, amount: inv.open_amount,
-            currency: inv.original_currency || 'USD', daysOutstanding, agingBucket: daysOutstanding > 60 ? '60+' : daysOutstanding > 30 ? '30-60' : 'current' };
+            currency: inv.original_currency || 'BRL', daysOutstanding, agingBucket: daysOutstanding > 60 ? '60+' : daysOutstanding > 30 ? '30-60' : 'current' };
         }),
         total, page, pageSize, totalPages: Math.ceil(total / pageSize),
       };
@@ -167,7 +167,7 @@ export function useAPDetailedData(dateRange?: { from?: Date; to?: Date }, sortBy
       filtered.sort(sorters[sortBy] ?? sorters.due_date_asc);
       return filtered.map(b => ({
         id: b.id, billNumber: b.id.slice(0,8), vendor: b.vendor_name, issueDate: b.issue_date, dueDate: b.due_date,
-        status: b.status, amount: b.open_amount, currency: b.original_currency || 'USD',
+        status: b.status, amount: b.open_amount, currency: b.original_currency || 'BRL',
         daysUntilDue: Math.ceil((new Date(b.due_date).getTime() - today.getTime()) / 86400000),
         category: b.category,
       }));

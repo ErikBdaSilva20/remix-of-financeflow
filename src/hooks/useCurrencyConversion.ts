@@ -3,7 +3,7 @@ import { getCurrencySymbol } from "@/lib/currencySymbols";
 import { listFxRates } from "@/lib/data/fx_rates.repo";
 import type { FxRate } from "@/lib/data/fx_rates.repo";
 
-export const useCurrencyConversion = (currency: string = 'USD') => {
+export const useCurrencyConversion = (currency: string = 'BRL') => {
   const { data: allFxRatesData } = useQuery({
     queryKey: ["all-fx-rates-with-dates"],
     queryFn: async () => {

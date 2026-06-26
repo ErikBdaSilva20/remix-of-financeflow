@@ -27,36 +27,36 @@ const customers: Tables['customers']['Row'][] = [
 ];
 
 const accounts: Tables['accounts']['Row'][] = [
-  { id: 'acc-1', owner_id: 'preview', name: 'Main Operating Account', type: 'checking', currency: 'USD', balance: 125000, created_at: m(-12), updated_at: d(-1) },
-  { id: 'acc-2', owner_id: 'preview', name: 'Savings Reserve', type: 'savings', currency: 'USD', balance: 80000, created_at: m(-12), updated_at: d(-1) },
+  { id: 'acc-1', owner_id: 'preview', name: 'Main Operating Account', type: 'checking', currency: 'BRL', balance: 125000, created_at: m(-12), updated_at: d(-1) },
+  { id: 'acc-2', owner_id: 'preview', name: 'Savings Reserve', type: 'savings', currency: 'BRL', balance: 80000, created_at: m(-12), updated_at: d(-1) },
 ];
 
 const invoices: Tables['invoices']['Row'][] = [
-  { id: 'inv-1', owner_id: 'preview', customer_id: 'cust-1', issue_date: m(-2), due_date: m(-1), amount_total: 24500, open_amount: 0, original_amount: 24500, original_currency: 'USD', status: 'Paid', channel: 'Direct', product_id: 'SAAS-PRO', created_at: m(-2), updated_at: m(-1) },
-  { id: 'inv-2', owner_id: 'preview', customer_id: 'cust-2', issue_date: m(-1), due_date: d(15), amount_total: 18200, open_amount: 18200, original_amount: 18200, original_currency: 'USD', status: 'Open', channel: 'Online', product_id: 'SAAS-PRO', created_at: m(-1), updated_at: m(-1) },
-  { id: 'inv-3', owner_id: 'preview', customer_id: 'cust-3', issue_date: m(-3), due_date: m(-2), amount_total: 9800, open_amount: 9800, original_amount: 9800, original_currency: 'USD', status: 'Overdue', channel: 'Direct', product_id: 'SAAS-BASIC', created_at: m(-3), updated_at: m(-3) },
-  { id: 'inv-4', owner_id: 'preview', customer_id: 'cust-1', issue_date: m(-1), due_date: d(30), amount_total: 32000, open_amount: 16000, original_amount: 32000, original_currency: 'USD', status: 'Partially Paid', channel: 'Online', product_id: 'SAAS-ENT', created_at: m(-1), updated_at: d(-5) },
+  { id: 'inv-1', owner_id: 'preview', customer_id: 'cust-1', issue_date: m(-2), due_date: m(-1), amount_total: 24500, open_amount: 0, original_amount: 24500, original_currency: 'BRL', status: 'Paid', channel: 'Direct', product_id: 'SAAS-PRO', created_at: m(-2), updated_at: m(-1) },
+  { id: 'inv-2', owner_id: 'preview', customer_id: 'cust-2', issue_date: m(-1), due_date: d(15), amount_total: 18200, open_amount: 18200, original_amount: 18200, original_currency: 'BRL', status: 'Open', channel: 'Online', product_id: 'SAAS-PRO', created_at: m(-1), updated_at: m(-1) },
+  { id: 'inv-3', owner_id: 'preview', customer_id: 'cust-3', issue_date: m(-3), due_date: m(-2), amount_total: 9800, open_amount: 9800, original_amount: 9800, original_currency: 'BRL', status: 'Overdue', channel: 'Direct', product_id: 'SAAS-BASIC', created_at: m(-3), updated_at: m(-3) },
+  { id: 'inv-4', owner_id: 'preview', customer_id: 'cust-1', issue_date: m(-1), due_date: d(30), amount_total: 32000, open_amount: 16000, original_amount: 32000, original_currency: 'BRL', status: 'Partially Paid', channel: 'Online', product_id: 'SAAS-ENT', created_at: m(-1), updated_at: d(-5) },
 ];
 
 const expenses: Tables['expenses_new']['Row'][] = [
-  { id: 'exp-1', owner_id: 'preview', date: m(-1), amount: 8500, original_amount: 8500, original_currency: 'USD', category: 'payroll', vendor: 'ADP Payroll', description: 'Monthly payroll run', project_id: null, department: 'Engineering', product: null, region: null, created_at: m(-1), updated_at: m(-1) },
-  { id: 'exp-2', owner_id: 'preview', date: m(-1), amount: 2400, original_amount: 2400, original_currency: 'USD', category: 'software', vendor: 'AWS', description: 'Cloud infrastructure', project_id: null, department: 'Engineering', product: null, region: null, created_at: m(-1), updated_at: m(-1) },
-  { id: 'exp-3', owner_id: 'preview', date: m(-1), amount: 1200, original_amount: 1200, original_currency: 'USD', category: 'marketing', vendor: 'Google Ads', description: 'Digital advertising', project_id: null, department: 'Marketing', product: null, region: null, created_at: m(-1), updated_at: m(-1) },
-  { id: 'exp-4', owner_id: 'preview', date: m(-2), amount: 8500, original_amount: 8500, original_currency: 'USD', category: 'payroll', vendor: 'ADP Payroll', description: 'Monthly payroll run', project_id: null, department: 'Engineering', product: null, region: null, created_at: m(-2), updated_at: m(-2) },
-  { id: 'exp-5', owner_id: 'preview', date: m(-2), amount: 950, original_amount: 950, original_currency: 'USD', category: 'office', vendor: 'WeWork', description: 'Office rent', project_id: null, department: 'Operations', product: null, region: null, created_at: m(-2), updated_at: m(-2) },
+  { id: 'exp-1', owner_id: 'preview', date: m(-1), amount: 8500, original_amount: 8500, original_currency: 'BRL', category: 'payroll', vendor: 'ADP Payroll', description: 'Monthly payroll run', project_id: null, department: 'Engineering', product: null, region: null, created_at: m(-1), updated_at: m(-1) },
+  { id: 'exp-2', owner_id: 'preview', date: m(-1), amount: 2400, original_amount: 2400, original_currency: 'BRL', category: 'software', vendor: 'AWS', description: 'Cloud infrastructure', project_id: null, department: 'Engineering', product: null, region: null, created_at: m(-1), updated_at: m(-1) },
+  { id: 'exp-3', owner_id: 'preview', date: m(-1), amount: 1200, original_amount: 1200, original_currency: 'BRL', category: 'marketing', vendor: 'Google Ads', description: 'Digital advertising', project_id: null, department: 'Marketing', product: null, region: null, created_at: m(-1), updated_at: m(-1) },
+  { id: 'exp-4', owner_id: 'preview', date: m(-2), amount: 8500, original_amount: 8500, original_currency: 'BRL', category: 'payroll', vendor: 'ADP Payroll', description: 'Monthly payroll run', project_id: null, department: 'Engineering', product: null, region: null, created_at: m(-2), updated_at: m(-2) },
+  { id: 'exp-5', owner_id: 'preview', date: m(-2), amount: 950, original_amount: 950, original_currency: 'BRL', category: 'office', vendor: 'WeWork', description: 'Office rent', project_id: null, department: 'Operations', product: null, region: null, created_at: m(-2), updated_at: m(-2) },
 ];
 
 const bankTransactions: Tables['bank_transactions']['Row'][] = [
-  { id: 'bt-1', owner_id: 'preview', account_id: 'acc-1', date: d(-2), amount: 24500, original_amount: 24500, original_currency: 'USD', type: 'in', counterparty: 'Acme Corporation', category: 'Revenue', description: 'Invoice INV-001 payment', created_at: d(-2), updated_at: d(-2) },
-  { id: 'bt-2', owner_id: 'preview', account_id: 'acc-1', date: d(-5), amount: -8500, original_amount: 8500, original_currency: 'USD', type: 'out', counterparty: 'ADP Payroll', category: 'payroll', description: 'Monthly payroll', created_at: d(-5), updated_at: d(-5) },
-  { id: 'bt-3', owner_id: 'preview', account_id: 'acc-1', date: d(-10), amount: -2400, original_amount: 2400, original_currency: 'USD', type: 'out', counterparty: 'AWS', category: 'software', description: 'Cloud infrastructure', created_at: d(-10), updated_at: d(-10) },
-  { id: 'bt-4', owner_id: 'preview', account_id: 'acc-1', date: d(-15), amount: 18200, original_amount: 18200, original_currency: 'USD', type: 'in', counterparty: 'Globex Industries', category: 'Revenue', description: 'Invoice payment', created_at: d(-15), updated_at: d(-15) },
-  { id: 'bt-5', owner_id: 'preview', account_id: 'acc-1', date: d(-20), amount: -1200, original_amount: 1200, original_currency: 'USD', type: 'out', counterparty: 'Google Ads', category: 'marketing', description: 'Ad spend', created_at: d(-20), updated_at: d(-20) },
+  { id: 'bt-1', owner_id: 'preview', account_id: 'acc-1', date: d(-2), amount: 24500, original_amount: 24500, original_currency: 'BRL', type: 'in', counterparty: 'Acme Corporation', category: 'Revenue', description: 'Invoice INV-001 payment', created_at: d(-2), updated_at: d(-2) },
+  { id: 'bt-2', owner_id: 'preview', account_id: 'acc-1', date: d(-5), amount: -8500, original_amount: 8500, original_currency: 'BRL', type: 'out', counterparty: 'ADP Payroll', category: 'payroll', description: 'Monthly payroll', created_at: d(-5), updated_at: d(-5) },
+  { id: 'bt-3', owner_id: 'preview', account_id: 'acc-1', date: d(-10), amount: -2400, original_amount: 2400, original_currency: 'BRL', type: 'out', counterparty: 'AWS', category: 'software', description: 'Cloud infrastructure', created_at: d(-10), updated_at: d(-10) },
+  { id: 'bt-4', owner_id: 'preview', account_id: 'acc-1', date: d(-15), amount: 18200, original_amount: 18200, original_currency: 'BRL', type: 'in', counterparty: 'Globex Industries', category: 'Revenue', description: 'Invoice payment', created_at: d(-15), updated_at: d(-15) },
+  { id: 'bt-5', owner_id: 'preview', account_id: 'acc-1', date: d(-20), amount: -1200, original_amount: 1200, original_currency: 'BRL', type: 'out', counterparty: 'Google Ads', category: 'marketing', description: 'Ad spend', created_at: d(-20), updated_at: d(-20) },
 ];
 
 const vendorBills: Tables['vendor_bills']['Row'][] = [
-  { id: 'vb-1', owner_id: 'preview', vendor_name: 'Office Supplies Co', issue_date: m(-1), due_date: d(10), amount_total: 450, open_amount: 450, original_amount: 450, original_currency: 'USD', status: 'Open', category: 'office', created_at: m(-1), updated_at: m(-1) },
-  { id: 'vb-2', owner_id: 'preview', vendor_name: 'AWS', issue_date: m(-1), due_date: d(-5), amount_total: 2400, open_amount: 0, original_amount: 2400, original_currency: 'USD', status: 'Paid', category: 'software', created_at: m(-1), updated_at: d(-5) },
+  { id: 'vb-1', owner_id: 'preview', vendor_name: 'Office Supplies Co', issue_date: m(-1), due_date: d(10), amount_total: 450, open_amount: 450, original_amount: 450, original_currency: 'BRL', status: 'Open', category: 'office', created_at: m(-1), updated_at: m(-1) },
+  { id: 'vb-2', owner_id: 'preview', vendor_name: 'AWS', issue_date: m(-1), due_date: d(-5), amount_total: 2400, open_amount: 0, original_amount: 2400, original_currency: 'BRL', status: 'Paid', category: 'software', created_at: m(-1), updated_at: d(-5) },
 ];
 
 const fxRates: Tables['fx_rates']['Row'][] = [
@@ -80,7 +80,7 @@ const filterSegments: Tables['filter_segments']['Row'][] = [
 ];
 
 const accountingSettings: Tables['accounting_settings']['Row'][] = [
-  { id: 'as-1', owner_id: 'preview', basis: 'accrual', base_currency: 'USD', timezone: 'America/New_York', allow_future_dates: false, created_at: m(-12), updated_at: m(-12) },
+  { id: 'as-1', owner_id: 'preview', basis: 'accrual', base_currency: 'BRL', timezone: 'America/New_York', allow_future_dates: false, created_at: m(-12), updated_at: m(-12) },
 ];
 
 const scheduledReports: Tables['scheduled_reports']['Row'][] = [
