@@ -98,24 +98,6 @@ export default function Overview() {
     year: 'ano'
   };
 
-  if (
-    metricsLoading ||
-    revenueLoading ||
-    expensesLoading ||
-    kpisLoading ||
-    revenueProfitLoading ||
-    comparisonLoading
-  ) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin-fast mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando dados financeiros...</p>
-        </div>
-      </div>
-    );
-  }
-
   const formatGrowth = (growth: number | undefined) => {
     if (growth === undefined || !isFinite(growth)) return '0.0%';
     const sign = growth >= 0 ? '+' : '';

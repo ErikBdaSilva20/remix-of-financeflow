@@ -20,9 +20,9 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Cache "fresco" por 5 min: navegar entre páginas não re-busca tudo.
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
+      // Cache stays fresh for 30 min: no refetch when navigating back/forward
+      staleTime: 30 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
       // Não refazer todas as requests só por focar a aba.
       refetchOnWindowFocus: false,
       // Retry inteligente: NÃO re-tentar erros 4xx do gateway (tabela vazia/
