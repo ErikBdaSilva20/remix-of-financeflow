@@ -37,7 +37,7 @@ const invoiceSchema = z.object({
   issue_date: z.string().min(1, "A data de emissão é obrigatória"),
   due_date: z.string().min(1, "A data de vencimento é obrigatória"),
   amount_total: z.string().min(1, "O valor é obrigatório"),
-  original_currency: z.string().default("USD"),
+  original_currency: z.string().default("BRL"),
   status: z.enum(["Draft", "Open", "Paid", "Overdue", "Cancelled"]),
   channel: z.string().optional(),
   product_id: z.string().optional(),
@@ -66,7 +66,7 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
       issue_date: new Date().toISOString().split("T")[0],
       due_date: "",
       amount_total: "",
-      original_currency: "USD",
+      original_currency: "BRL",
       status: "Open",
       channel: "",
       product_id: "",
@@ -91,13 +91,13 @@ export function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
         product_id: data.product_id || null,
       });
 
-      toast.success("Invoice created successfully");
+      toast.success("Fatura criada com sucesso");
       queryClient.invalidateQueries({ queryKey: ["ar-data"] });
       queryClient.invalidateQueries({ queryKey: ["recent-activity"] });
       form.reset();
       onOpenChange(false);
     } catch (error: any) {
-      const errorMessage = error?.message || "Failed to create invoice";
+      const errorMessage = error?.message || "Falha ao criar a fatura";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);

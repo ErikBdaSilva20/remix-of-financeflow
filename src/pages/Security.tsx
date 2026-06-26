@@ -8,7 +8,7 @@ import { FilterSegmentsSettings } from "@/components/FilterSegmentsSettings";
 const Security = () => {
   const [filters, setFilters] = useState<FilterState>({
     dateRange: {},
-    currency: 'USD'
+    currency: 'BRL'
   });
   const securityFeatures = [
     {

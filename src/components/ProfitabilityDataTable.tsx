@@ -28,7 +28,7 @@ export function ProfitabilityDataTable({ drillDownData, onClose, formatCurrency 
 
   const getTitle = () => {
     if (drillDownData.type === 'waterfall') {
-      return `${drillDownData.metric} Breakdown`;
+      return `Detalhamento - ${drillDownData.metric}`;
     }
     return `${drillDownData.metric} - ${drillDownData.period}`;
   };
@@ -47,10 +47,10 @@ export function ProfitabilityDataTable({ drillDownData, onClose, formatCurrency 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  {drillDownData.data[0]?.category && <TableHead>Category</TableHead>}
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  {drillDownData.data[0]?.category && <TableHead>Categoria</TableHead>}
+                  <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -73,7 +73,7 @@ export function ProfitabilityDataTable({ drillDownData, onClose, formatCurrency 
           </div>
         ) : (
           <div className="flex items-center justify-center h-32 text-muted-foreground">
-            No transactions found for this selection
+            Nenhuma transação encontrada para esta seleção
           </div>
         )}
       </CardContent>

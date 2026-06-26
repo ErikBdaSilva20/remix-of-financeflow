@@ -21,17 +21,17 @@ import { useMemo, useState } from 'react';
 const Profitability = () => {
   const [filters, setFilters] = useState<FilterState>({
     dateRange: {},
-    currency: 'USD',
+    currency: 'BRL',
   });
   const { data: profitabilityData, isLoading } = useProfitabilityData({
     ...filters,
-    currency: filters.currency || 'USD',
+    currency: filters.currency || 'BRL',
   });
-  const profitBreakdown = useProfitBreakdown({ ...filters, currency: filters.currency || 'USD' });
-  const marginTrends = useMarginTrends({ ...filters, currency: filters.currency || 'USD' });
+  const profitBreakdown = useProfitBreakdown({ ...filters, currency: filters.currency || 'BRL' });
+  const marginTrends = useMarginTrends({ ...filters, currency: filters.currency || 'BRL' });
   const { data: marginTrendsData } = useMarginTrendsTimeSeries({
     ...filters,
-    currency: filters.currency || 'USD',
+    currency: filters.currency || 'BRL',
   });
   const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency || 'USD');
   const { drillDownData, handleWaterfallClick, handleMarginClick, clearDrillDown } =

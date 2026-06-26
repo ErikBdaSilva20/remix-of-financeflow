@@ -22,33 +22,33 @@ export function ExpenseDrillDownTable({
 
   const getTitle = () => {
     if (drillDownData.filterType === "category") {
-      return `Expenses - ${drillDownData.category}`;
+      return `Despesas - ${drillDownData.category}`;
     }
-    return `Expenses - ${drillDownData.periodLabel}`;
+    return `Despesas - ${drillDownData.periodLabel}`;
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold">{getTitle()}</CardTitle>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close expense drill-down">
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fechar detalhamento de despesas">
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center h-32 text-muted-foreground">
-            Loading transactions...
+            Carregando transações...
           </div>
         ) : drillDownData.data.length > 0 ? (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  {drillDownData.data[0]?.category && <TableHead>Category</TableHead>}
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  {drillDownData.data[0]?.category && <TableHead>Categoria</TableHead>}
+                  <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -71,7 +71,7 @@ export function ExpenseDrillDownTable({
           </div>
         ) : (
           <div className="flex items-center justify-center h-32 text-muted-foreground">
-            No transactions found for this selection
+            Nenhuma transação encontrada para esta seleção
           </div>
         )}
       </CardContent>

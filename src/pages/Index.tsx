@@ -25,10 +25,10 @@ import { Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } f
 // Mock data for Revenue vs Profit chart
 const revenueVsProfitData = [
   { month: 'Jan', revenue: 245000, profit: 54000 },
-  { month: 'Feb', revenue: 268000, profit: 59000 },
+  { month: 'Fev', revenue: 268000, profit: 59000 },
   { month: 'Mar', revenue: 285000, profit: 67000 },
-  { month: 'Apr', revenue: 272000, profit: 61000 },
-  { month: 'May', revenue: 295000, profit: 72000 },
+  { month: 'Abr', revenue: 272000, profit: 61000 },
+  { month: 'Mai', revenue: 295000, profit: 72000 },
   { month: 'Jun', revenue: 310000, profit: 75000 },
 ];
 

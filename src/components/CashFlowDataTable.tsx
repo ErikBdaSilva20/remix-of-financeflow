@@ -30,7 +30,7 @@ export function CashFlowDataTable({ drillDownData, onClose, formatCurrency }: Ca
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold">
-          Cash Flow Details - {drillDownData.period}
+          Detalhes do Fluxo de Caixa - {drillDownData.period}
         </CardTitle>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
@@ -42,11 +42,11 @@ export function CashFlowDataTable({ drillDownData, onClose, formatCurrency }: Ca
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -63,7 +63,7 @@ export function CashFlowDataTable({ drillDownData, onClose, formatCurrency }: Ca
                       <div className="flex items-center gap-2">
                         {getTypeIcon(row.type)}
                         <Badge variant="secondary" className={getTypeBadge(row.type)}>
-                          {row.type === 'inflow' ? 'Inflow' : 'Outflow'}
+                          {row.type === 'inflow' ? 'Entrada' : 'Saída'}
                         </Badge>
                       </div>
                     </TableCell>
@@ -77,7 +77,7 @@ export function CashFlowDataTable({ drillDownData, onClose, formatCurrency }: Ca
           </div>
         ) : (
           <div className="flex items-center justify-center h-32 text-muted-foreground">
-            No transactions found for this period
+            Nenhuma transação encontrada para este período
           </div>
         )}
       </CardContent>

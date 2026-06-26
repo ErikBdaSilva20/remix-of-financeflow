@@ -16,10 +16,10 @@ import { Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } f
 // Mock data for enhanced charts
 const mrrData = [
   { month: 'Jan', mrr: 45000, arr: 540000 },
-  { month: 'Feb', mrr: 48500, arr: 582000 },
+  { month: 'Fev', mrr: 48500, arr: 582000 },
   { month: 'Mar', mrr: 52000, arr: 624000 },
-  { month: 'Apr', mrr: 54200, arr: 650400 },
-  { month: 'May', mrr: 57800, arr: 693600 },
+  { month: 'Abr', mrr: 54200, arr: 650400 },
+  { month: 'Mai', mrr: 57800, arr: 693600 },
   { month: 'Jun', mrr: 62500, arr: 750000 },
 ];
 
@@ -33,7 +33,7 @@ const stackedRevenueData = [
     services: 40000,
   },
   {
-    month: 'Feb',
+    month: 'Fev',
     dateKey: '2024-02',
     product1: 105000,
     product2: 68000,
@@ -49,7 +49,7 @@ const stackedRevenueData = [
     services: 50000,
   },
   {
-    month: 'Apr',
+    month: 'Abr',
     dateKey: '2024-04',
     product1: 108000,
     product2: 69000,
@@ -57,7 +57,7 @@ const stackedRevenueData = [
     services: 47000,
   },
   {
-    month: 'May',
+    month: 'Mai',
     dateKey: '2024-05',
     product1: 115000,
     product2: 75000,
@@ -76,17 +76,17 @@ const stackedRevenueData = [
 
 const stackedRegionData = [
   { month: 'Jan', dateKey: '2024-01', 'North America': 120000, Europe: 80000, Asia: 45000 },
-  { month: 'Feb', dateKey: '2024-02', 'North America': 135000, Europe: 85000, Asia: 48000 },
+  { month: 'Fev', dateKey: '2024-02', 'North America': 135000, Europe: 85000, Asia: 48000 },
   { month: 'Mar', dateKey: '2024-03', 'North America': 142000, Europe: 90000, Asia: 53000 },
-  { month: 'Apr', dateKey: '2024-04', 'North America': 135000, Europe: 87000, Asia: 50000 },
-  { month: 'May', dateKey: '2024-05', 'North America': 148000, Europe: 92000, Asia: 55000 },
+  { month: 'Abr', dateKey: '2024-04', 'North America': 135000, Europe: 87000, Asia: 50000 },
+  { month: 'Mai', dateKey: '2024-05', 'North America': 148000, Europe: 92000, Asia: 55000 },
   { month: 'Jun', dateKey: '2024-06', 'North America': 155000, Europe: 100000, Asia: 55000 },
 ];
 
 const Revenue = () => {
   const [filters, setFilters] = useState<FilterState>({
     dateRange: {},
-    currency: 'USD',
+    currency: 'BRL',
   });
 
   const [drillDownParams, setDrillDownParams] = useState<{
@@ -331,62 +331,66 @@ const Revenue = () => {
           </CardContent>
         </Card>
 
-        {/* Revenue by Product & Region Stacked Bar Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Receita por Produto e Dimensão - lado a lado */}
+        <div className="flex flex-col lg:flex-row gap-6">
           {dimensionsData && dimensionsData.productData.length > 0 && (
-            <StackedBarChart
-              data={stackedRevenueData}
-              title="Receita por Produto"
-              xAxisKey="month"
-              bars={[
-                { dataKey: 'product1', name: 'Produto A', color: '#059669' },
-                { dataKey: 'product2', name: 'Produto B', color: '#0891B2' },
-                { dataKey: 'product3', name: 'Produto C', color: '#047857' },
-                { dataKey: 'services', name: 'Serviços', color: '#0E7490' },
-              ]}
-              formatValue={formatWithCurrency}
-              onBarClick={(monthKey, productKey) => {
-                const data = stackedRevenueData.find((d) => d.month === monthKey);
-                if (data?.dateKey) {
-                  handleStackedBarClick(data.dateKey, productKey);
-                }
-              }}
-            />
+            <div className="flex-1">
+              <StackedBarChart
+                data={stackedRevenueData}
+                title="Receita por Produto"
+                xAxisKey="month"
+                bars={[
+                  { dataKey: 'product1', name: 'Produto A', color: '#059669' },
+                  { dataKey: 'product2', name: 'Produto B', color: '#0891B2' },
+                  { dataKey: 'product3', name: 'Produto C', color: '#047857' },
+                  { dataKey: 'services', name: 'Serviços', color: '#0E7490' },
+                ]}
+                formatValue={formatWithCurrency}
+                onBarClick={(monthKey, productKey) => {
+                  const data = stackedRevenueData.find((d) => d.month === monthKey);
+                  if (data?.dateKey) {
+                    handleStackedBarClick(data.dateKey, productKey);
+                  }
+                }}
+              />
+            </div>
           )}
 
-          {dimensionsData && dimensionsData.regionData.length > 0 && (
-            <StackedBarChart
-              data={stackedRegionData}
-              title="Receita por Região"
-              xAxisKey="month"
-              bars={[
-                {
-                  dataKey: 'North America',
-                  name: 'América do Norte',
-                  color: '#059669',
-                },
-                { dataKey: 'Europe', name: 'Europa', color: '#0891B2' },
-                { dataKey: 'Asia', name: 'Ásia', color: '#047857' },
-              ]}
-              formatValue={formatWithCurrency}
-              onBarClick={(monthKey, regionKey) => {
-                const data = stackedRegionData.find((d) => d.month === monthKey);
-                if (data?.dateKey) {
-                  handleRegionBarClick(data.dateKey, regionKey);
-                }
-              }}
+          <div className="flex-1">
+            <RevenueDimensionTable
+              productData={dimensionsData?.productData || []}
+              regionData={dimensionsData?.regionData || []}
+              channelData={dimensionsData?.channelData || []}
+              formatCurrency={formatWithCurrency}
+              onDimensionClick={handleDimensionClick}
             />
-          )}
+          </div>
         </div>
 
-        {/* Revenue Breakdown by Dimension */}
-        <RevenueDimensionTable
-          productData={dimensionsData?.productData || []}
-          regionData={dimensionsData?.regionData || []}
-          channelData={dimensionsData?.channelData || []}
-          formatCurrency={formatWithCurrency}
-          onDimensionClick={handleDimensionClick}
-        />
+        {/* Receita por Região */}
+        {dimensionsData && dimensionsData.regionData.length > 0 && (
+          <StackedBarChart
+            data={stackedRegionData}
+            title="Receita por Região"
+            xAxisKey="month"
+            bars={[
+              {
+                dataKey: 'North America',
+                name: 'América do Norte',
+                color: '#059669',
+              },
+              { dataKey: 'Europe', name: 'Europa', color: '#0891B2' },
+              { dataKey: 'Asia', name: 'Ásia', color: '#047857' },
+            ]}
+            formatValue={formatWithCurrency}
+            onBarClick={(monthKey, regionKey) => {
+              const data = stackedRegionData.find((d) => d.month === monthKey);
+              if (data?.dateKey) {
+                handleRegionBarClick(data.dateKey, regionKey);
+              }
+            }}
+          />
+        )}
 
         {/* Drill-down table */}
         {drillDownParams && (

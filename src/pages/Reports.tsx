@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const Reports = () => {
-  const [filters, setFilters] = useState<FilterState>({ dateRange: {}, currency: 'USD' });
+  const [filters, setFilters] = useState<FilterState>({ dateRange: {}, currency: 'BRL' });
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

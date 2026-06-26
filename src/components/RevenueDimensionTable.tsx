@@ -44,9 +44,9 @@ export function RevenueDimensionTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Dimension</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">% Share</TableHead>
+              <TableHead>Dimensão</TableHead>
+              <TableHead className="text-right">Valor</TableHead>
+              <TableHead className="text-right">% Participação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -56,7 +56,7 @@ export function RevenueDimensionTable({
                 className={onDimensionClick ? 'cursor-pointer hover:bg-muted-50' : ''}
                 onClick={() => onDimensionClick && onDimensionClick(row.dimension, dimensionType)}
               >
-                <TableCell className="font-medium">{row.dimension || 'Unspecified'}</TableCell>
+                <TableCell className="font-medium">{row.dimension || 'Não especificado'}</TableCell>
                 <TableCell className="text-right font-medium">
                   {formatCurrency(row.amount)}
                 </TableCell>
@@ -72,14 +72,14 @@ export function RevenueDimensionTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Revenue Breakdown by Dimension</CardTitle>
+        <CardTitle className="text-lg">Receita por Dimensão</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="product" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="product">Product</TabsTrigger>
-            <TabsTrigger value="region">Region</TabsTrigger>
-            <TabsTrigger value="channel">Channel</TabsTrigger>
+            <TabsTrigger value="product">Produto</TabsTrigger>
+            <TabsTrigger value="region">Região</TabsTrigger>
+            <TabsTrigger value="channel">Canal</TabsTrigger>
           </TabsList>
           <TabsContent value="product" className="mt-4">
             {renderTable(productData, 'product')}

@@ -23,6 +23,16 @@ const getResultIcon = (type: SearchResult['type']) => {
   }
 };
 
+const statusLabelsPt: Record<string, string> = {
+  paid: 'Pago',
+  open: 'Aberto',
+  overdue: 'Atrasado',
+  pending: 'Pendente',
+  draft: 'Rascunho',
+  partial: 'Parcial',
+  cancelled: 'Cancelado',
+};
+
 const getStatusBadgeVariant = (status?: string) => {
   if (!status) return 'outline';
   switch (status.toLowerCase()) {
@@ -62,7 +72,7 @@ export function SearchResults({ results, onResultClick }: SearchResultsProps) {
                   <span className="font-medium text-sm truncate">{result.title}</span>
                   {result.status && (
                     <Badge variant={getStatusBadgeVariant(result.status)} className="text-xs">
-                      {result.status}
+                      {statusLabelsPt[result.status?.toLowerCase() ?? ''] || result.status}
                     </Badge>
                   )}
                 </div>

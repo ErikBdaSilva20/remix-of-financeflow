@@ -40,7 +40,7 @@ import {
 const Expenses = () => {
   const [filters, setFilters] = useState<FilterState>({
     dateRange: {},
-    currency: 'USD',
+    currency: 'BRL',
   });
   const [vendorPage, setVendorPage] = useState(1);
   const vendorsPerPage = 5;

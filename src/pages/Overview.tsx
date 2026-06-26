@@ -25,7 +25,7 @@ import { useState } from 'react';
 export default function Overview() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
   const [filters] = useState<{ currency: string; dateRange?: { from?: Date; to?: Date } }>({
-    currency: 'USD',
+    currency: 'BRL',
     dateRange: undefined,
   });
   const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency);

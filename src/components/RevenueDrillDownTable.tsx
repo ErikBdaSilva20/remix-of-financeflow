@@ -14,9 +14,9 @@ interface RevenueDrillDownTableProps {
 
 export function RevenueDrillDownTable({ data, title, onClose, isLoading }: RevenueDrillDownTableProps) {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("pt-BR", {
       style: "currency",
-      currency: "USD",
+      currency: "BRL",
     }).format(value);
   };
 
@@ -30,6 +30,16 @@ export function RevenueDrillDownTable({ data, title, onClose, isLoading }: Reven
     return statusColors[status.toLowerCase()] || "bg-muted text-muted-foreground";
   };
 
+  const statusLabelsPt: Record<string, string> = {
+    paid: "Pago",
+    pending: "Pendente",
+    overdue: "Atrasado",
+    draft: "Rascunho",
+    open: "Aberto",
+    partial: "Parcial",
+    cancelled: "Cancelado",
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -41,32 +51,32 @@ export function RevenueDrillDownTable({ data, title, onClose, isLoading }: Reven
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">Loading transactions...</div>
+            <div className="text-sm text-muted-foreground">Carregando transações...</div>
           </div>
         ) : data.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">No transactions found for this selection</div>
+            <div className="text-sm text-muted-foreground">Nenhuma transação encontrada para esta seleção</div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Customer</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Cliente</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Open Amount</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Region</TableHead>
-                  <TableHead>Channel</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Valor em Aberto</TableHead>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Região</TableHead>
+                  <TableHead>Canal</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.map((invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell className="font-medium">
-                      {format(new Date(invoice.issue_date), "MMM dd, yyyy")}
+                      {format(new Date(invoice.issue_date), "dd/MM/yyyy")}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
@@ -76,7 +86,7 @@ export function RevenueDrillDownTable({ data, title, onClose, isLoading }: Reven
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={getStatusBadge(invoice.status)}>
-                        {invoice.status}
+                        {statusLabelsPt[invoice.status?.toLowerCase()] || invoice.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">{formatCurrency(invoice.amount_total)}</TableCell>

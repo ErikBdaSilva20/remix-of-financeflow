@@ -28,7 +28,7 @@ export function NotificationSettingsDialog({
   const [email, setEmail] = useState("");
 
   const handleSave = () => {
-    toast.success("Notification settings saved successfully!");
+    toast.success("Configurações de notificação salvas com sucesso!");
     onOpenChange(false);
   };
 

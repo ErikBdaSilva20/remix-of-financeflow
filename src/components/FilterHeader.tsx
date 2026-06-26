@@ -41,10 +41,10 @@ interface FilterHeaderProps {
 
 // Fallback segments if none are in database
 const fallbackSegments = {
-  projects: ['Project Alpha', 'Project Beta', 'Project Gamma', 'Project Delta'],
-  departments: ['Sales', 'Marketing', 'Engineering', 'Operations', 'Finance'],
-  products: ['Product A', 'Product B', 'Product C', 'Product D'],
-  regions: ['North America', 'Europe', 'Asia Pacific', 'Latin America', 'Middle East']
+  projects: ['Projeto Alfa', 'Projeto Beta', 'Projeto Gama', 'Projeto Delta'],
+  departments: ['Vendas', 'Marketing', 'Engenharia', 'Operações', 'Financeiro'],
+  products: ['Produto A', 'Produto B', 'Produto C', 'Produto D'],
+  regions: ['América do Norte', 'Europa', 'Ásia-Pacífico', 'América Latina', 'Oriente Médio']
 };
 
 const currencies = ['USD', 'BRL', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
@@ -91,7 +91,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
       department: undefined,
       product: undefined,
       region: undefined,
-      currency: showFxCurrency ? 'USD' : undefined
+      currency: showFxCurrency ? 'BRL' : undefined
     });
   };
 
@@ -116,7 +116,7 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
 
   const formatDateRange = () => {
     if (filters.dateRange.from && filters.dateRange.to) {
-      return `${format(filters.dateRange.from, 'MMM dd')} - ${format(filters.dateRange.to, 'MMM dd, yyyy')}`;
+      return `${format(filters.dateRange.from, 'dd/MM')} - ${format(filters.dateRange.to, 'dd/MM/yyyy')}`;
     }
     if (filters.dateRange.from) {
       return `De ${format(filters.dateRange.from, 'dd/MM/yyyy')}`;

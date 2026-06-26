@@ -16,7 +16,7 @@ import { CashFlowDataTable } from "@/components/CashFlowDataTable";
 const CashFlow = () => {
   const [filters, setFilters] = useState<FilterState>({
     dateRange: {},
-    currency: 'USD'
+    currency: 'BRL'
   });
 
   const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency);
@@ -61,8 +61,8 @@ const CashFlow = () => {
       const aggregated: Record<string, { period: string; dateKey: string; inflow: number; outflow: number; net: number }> = {};
       data.forEach(row => {
         const key = useDailyGranularity
-          ? format(parseISO(row.date), "MMM dd")
-          : format(parseISO(row.date), "MMM yyyy");
+          ? format(parseISO(row.date), "dd/MM")
+          : format(parseISO(row.date), "MM/yyyy");
         const dateKey = useDailyGranularity
           ? format(parseISO(row.date), "yyyy-MM-dd")
           : format(parseISO(row.date), "yyyy-MM");

@@ -33,7 +33,7 @@ const Receivables = () => {
   const { toast } = useToast();
   const [filters, setFilters] = useState<FilterState>({
     dateRange: {},
-    currency: 'USD',
+    currency: 'BRL',
   });
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);

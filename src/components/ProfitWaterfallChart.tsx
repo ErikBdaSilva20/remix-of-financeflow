@@ -22,11 +22,11 @@ export function ProfitWaterfallChart({ revenue, cogs, operatingExpenses, classNa
   const netProfit = grossProfit - operatingExpenses;
 
   const waterfallData: WaterfallData[] = [
-    { name: 'Revenue', value: revenue, cumulative: revenue, type: 'positive' },
-    { name: 'COGS', value: -cogs, cumulative: grossProfit, type: 'negative' },
-    { name: 'Gross Profit', value: grossProfit, cumulative: grossProfit, type: 'total' },
-    { name: 'Op. Expenses', value: -operatingExpenses, cumulative: netProfit, type: 'negative' },
-    { name: 'Net Profit', value: netProfit, cumulative: netProfit, type: 'total' }
+    { name: 'Receita', value: revenue, cumulative: revenue, type: 'positive' },
+    { name: 'CPV', value: -cogs, cumulative: grossProfit, type: 'negative' },
+    { name: 'Lucro Bruto', value: grossProfit, cumulative: grossProfit, type: 'total' },
+    { name: 'Desp. Oper.', value: -operatingExpenses, cumulative: netProfit, type: 'negative' },
+    { name: 'Lucro Líquido', value: netProfit, cumulative: netProfit, type: 'total' }
   ];
 
   const getBarColor = (type: string) => {
@@ -49,10 +49,10 @@ export function ProfitWaterfallChart({ revenue, cogs, operatingExpenses, classNa
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium text-card-foreground">{label}</p>
           <p className="text-sm text-muted-foreground">
-            Value: {formatCurrency(Math.abs(data.value))}
+            Valor: {formatCurrency(Math.abs(data.value))}
           </p>
           <p className="text-sm text-muted-foreground">
-            Cumulative: {formatCurrency(data.cumulative)}
+            Acumulado: {formatCurrency(data.cumulative)}
           </p>
         </div>
       );
@@ -63,7 +63,7 @@ export function ProfitWaterfallChart({ revenue, cogs, operatingExpenses, classNa
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Profit Waterfall</CardTitle>
+        <CardTitle className="text-lg font-semibold">Cascata de Lucro</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-80">
@@ -103,15 +103,15 @@ export function ProfitWaterfallChart({ revenue, cogs, operatingExpenses, classNa
         <div className="flex justify-center gap-6 mt-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: '#047857' }}></div>
-            <span className="text-muted-foreground">Revenue</span>
+            <span className="text-muted-foreground">Receita</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: '#EF4444' }}></div>
-            <span className="text-muted-foreground">Expenses</span>
+            <span className="text-muted-foreground">Despesas</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: '#059669' }}></div>
-            <span className="text-muted-foreground">Profit</span>
+            <span className="text-muted-foreground">Lucro</span>
           </div>
         </div>
       </CardContent>
