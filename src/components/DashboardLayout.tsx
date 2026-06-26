@@ -12,6 +12,7 @@ import { useGlobalSearch, SearchResult } from "@/hooks/useGlobalSearch";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { ParticleBackground } from "./ParticleBackground";
+import { useAppDataPrefetch } from "@/hooks/useAppDataPrefetch";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -26,6 +27,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const searchRef = useRef<HTMLDivElement>(null);
 
   const { results, isLoading } = useGlobalSearch(searchQuery);
+  useAppDataPrefetch();
 
   // Close search results when clicking outside
   useEffect(() => {
