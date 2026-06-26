@@ -16,6 +16,7 @@ import Receivables from "./pages/Receivables";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -46,42 +47,15 @@ const App = () => (
         <AuthProvider>
         <AuthWrapper>
           <Routes>
-            <Route path="/" element={
-              <DashboardLayout>
-                <Overview />
-              </DashboardLayout>
-            } />
-            <Route path="/revenue" element={
-              <DashboardLayout>
-                <Revenue />
-              </DashboardLayout>
-            } />
-            <Route path="/expenses" element={
-              <DashboardLayout>
-                <Expenses />
-              </DashboardLayout>
-            } />
-            <Route path="/profitability" element={
-              <DashboardLayout>
-                <Profitability />
-              </DashboardLayout>
-            } />
-            <Route path="/cash-flow" element={
-              <DashboardLayout>
-                <CashFlow />
-              </DashboardLayout>
-            } />
-            <Route path="/receivables" element={
-              <DashboardLayout>
-                <Receivables />
-              </DashboardLayout>
-            } />
-            <Route path="/reports" element={
-              <DashboardLayout>
-                <Reports />
-              </DashboardLayout>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route element={<DashboardLayout />}>
+              <Route path="/" element={<Overview />} />
+              <Route path="/revenue" element={<Revenue />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/profitability" element={<Profitability />} />
+              <Route path="/cash-flow" element={<CashFlow />} />
+              <Route path="/receivables" element={<Receivables />} />
+              <Route path="/reports" element={<Reports />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthWrapper>

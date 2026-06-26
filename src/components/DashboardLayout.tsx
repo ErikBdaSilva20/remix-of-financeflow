@@ -1,4 +1,3 @@
-import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { FinancialSidebar } from "./FinancialSidebar";
 import { NotificationPopover } from "./NotificationPopover";
@@ -9,16 +8,12 @@ import { Search, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
 import { useGlobalSearch, SearchResult } from "@/hooks/useGlobalSearch";
-import { useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { ParticleBackground } from "./ParticleBackground";
 import { useAppDataPrefetch } from "@/hooks/useAppDataPrefetch";
 
-interface DashboardLayoutProps {
-  children: ReactNode;
-}
-
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -134,7 +129,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Main Content */}
           <main className="flex-1 p-6 bg-transparent overflow-auto relative z-0">
-            {children}
+            <Outlet />
           </main>
         </div>
       </div>
