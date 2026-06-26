@@ -1,6 +1,8 @@
 // PROTECTED — contrato com o tenant-gateway. Não edite este arquivo.
 // A IA só pode editar arquivos em editable.allow (veja masi.template.json).
 
+import { previewApi } from './preview-fixtures';
+
 declare global {
   interface Window {
     __MASI_GW__?: string;
@@ -29,7 +31,6 @@ async function api<T>(method: string, path: string, body?: unknown): Promise<T> 
   // local sem gateway, VITE_PREVIEW=true ativa o mesmo branch. O gate import.meta.env.DEV
   // garante que isso NUNCA cai no build de produção do template.
   if (window.__MASI_PREVIEW__ || (import.meta.env.DEV && import.meta.env.VITE_PREVIEW === 'true')) {
-    const { previewApi } = await import('./preview-fixtures');
     return previewApi<T>(method, path, body);
   }
 
