@@ -7,7 +7,7 @@ import { BarChart3, DollarSign, Repeat, TrendingUp } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
-import { useFinancialMetrics, useRevenueSources, useRevenueTrends } from '@/hooks/useFinancialData';
+import { useFinancialMetrics, useRevenueTrends } from '@/hooks/useFinancialData';
 import { useRevenueDimensions } from '@/hooks/useRevenueDimensions';
 import { useRevenueDrillDown } from '@/hooks/useRevenueDrillDown';
 import { useState } from 'react';
@@ -97,7 +97,6 @@ const Revenue = () => {
   } | null>(null);
 
   const { data: metrics, isLoading: metricsLoading } = useFinancialMetrics(filters.dateRange);
-  const { data: revenueSources, isLoading: revenueLoading } = useRevenueSources(filters.dateRange);
   const { data: revenueTrends, isLoading: trendsLoading } = useRevenueTrends(filters.dateRange);
   const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency);
 

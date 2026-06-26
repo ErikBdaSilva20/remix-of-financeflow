@@ -10,12 +10,7 @@ import { TimePeriod, TimePeriodSelector } from '@/components/TimePeriodSelector'
 import { Badge } from '@/components/ui/badge';
 import { useContacts } from '@/hooks/useContacts';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
-import {
-  useExpenseCategories,
-  useFinancialMetrics,
-  useKPIs,
-  useRevenueSources,
-} from '@/hooks/useFinancialData';
+import { useFinancialMetrics, useKPIs } from '@/hooks/useFinancialData';
 import { usePeriodComparison } from '@/hooks/usePeriodComparison';
 import { useRevenueDrillDown } from '@/hooks/useRevenueDrillDown';
 import { useRevenueProfitData } from '@/hooks/useRevenueProfitData';
@@ -42,8 +37,6 @@ export default function Overview() {
   const { data: drillDownData, isLoading: drillDownLoading } = useRevenueDrillDown(drillDownParams);
 
   const { data: metrics, isLoading: metricsLoading } = useFinancialMetrics(filters.dateRange);
-  const { data: revenueSources, isLoading: revenueLoading } = useRevenueSources();
-  const { data: expenseCategories, isLoading: expensesLoading } = useExpenseCategories();
   const { data: kpis, isLoading: kpisLoading } = useKPIs();
   const { data: revenueProfitData, isLoading: revenueProfitLoading } = useRevenueProfitData(
     filters.dateRange
@@ -95,7 +88,7 @@ export default function Overview() {
   const periodNamesPt: Record<TimePeriod, string> = {
     month: 'mês',
     quarter: 'trimestre',
-    year: 'ano'
+    year: 'ano',
   };
 
   const formatGrowth = (growth: number | undefined) => {
