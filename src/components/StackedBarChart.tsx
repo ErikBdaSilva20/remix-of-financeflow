@@ -45,50 +45,52 @@ export function StackedBarChart({
   };
 
   return (
-    <Card className={className}>
+    <Card className={`${className ?? ''} w-full min-w-0`}>
       <CardHeader>
         <CardTitle className="text-lg font-semibold">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={data} 
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis 
-                dataKey={xAxisKey}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12 }}
-                className="fill-muted-foreground"
-              />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12 }}
-                className="fill-muted-foreground"
-                tickFormatter={formatValue}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                wrapperStyle={{ paddingTop: '20px' }}
-              />
-              {bars.map((bar) => (
-                <Bar 
-                  key={bar.dataKey}
-                  dataKey={bar.dataKey} 
-                  stackId="a"
-                  fill={bar.color}
-                  name={bar.name}
-                  radius={[2, 2, 0, 0]}
-                  onClick={(data) => onBarClick?.(data[xAxisKey], bar.dataKey)}
-                  cursor={onBarClick ? "pointer" : "default"}
-                />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
+      <CardContent className="p-4 w-full min-w-0">
+        <div className="overflow-x-auto w-full">
+          <div style={{ minWidth: '480px' }}>
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis
+                    dataKey={xAxisKey}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12 }}
+                    className="fill-muted-foreground"
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12 }}
+                    className="fill-muted-foreground"
+                    tickFormatter={formatValue}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                  {bars.map((bar) => (
+                    <Bar
+                      key={bar.dataKey}
+                      dataKey={bar.dataKey}
+                      stackId="a"
+                      fill={bar.color}
+                      name={bar.name}
+                      radius={[2, 2, 0, 0]}
+                      onClick={(data) => onBarClick?.(data[xAxisKey], bar.dataKey)}
+                      cursor={onBarClick ? 'pointer' : 'default'}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

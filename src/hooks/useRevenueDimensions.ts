@@ -31,15 +31,15 @@ export function useRevenueDimensions(dateRange?: { from?: Date; to?: Date }) {
 
       if (filtered.length === 0) return { productData: [], regionData: [], channelData: [] };
 
-      const totalRevenue = filtered.reduce((s, i) => s + i.amount_total, 0);
+      const totalRevenue = filtered.reduce((s, i) => s + Number(i.amount_total || 0), 0);
 
       const productMap = new Map<string, number>();
       const channelMap = new Map<string, number>();
       filtered.forEach((inv) => {
         const product = inv.product_id || 'Unspecified';
-        productMap.set(product, (productMap.get(product) || 0) + inv.amount_total);
+        productMap.set(product, (productMap.get(product) || 0) + Number(inv.amount_total || 0));
         const channel = inv.channel || 'Unspecified';
-        channelMap.set(channel, (channelMap.get(channel) || 0) + inv.amount_total);
+        channelMap.set(channel, (channelMap.get(channel) || 0) + Number(inv.amount_total || 0));
       });
 
       const toArray = (map: Map<string, number>): DimensionData[] =>
@@ -113,7 +113,7 @@ export function useRevenueByProductTrends(dateRange?: { from?: Date; to?: Date }
         const product = inv.product_id || 'Outros';
         if (!agg.has(label)) agg.set(label, { month: label, dateKey });
         const entry = agg.get(label)!;
-        entry[product] = ((entry[product] as number) || 0) + inv.amount_total;
+        entry[product] = ((entry[product] as number) || 0) + Number(inv.amount_total || 0);
       });
 
       const products = Array.from(productSet);

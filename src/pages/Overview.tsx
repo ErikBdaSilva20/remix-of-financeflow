@@ -1,32 +1,22 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
-import { ContactAvatar } from '@/components/ContactAvatar';
-import { ContactsDialog } from '@/components/ContactsDialog';
-import { NotificationSettingsDialog } from '@/components/NotificationSettingsDialog';
 import { RevenueDrillDownTable } from '@/components/RevenueDrillDownTable';
 import { RevenueProfitChart } from '@/components/RevenueProfitChart';
 import { TimePeriod, TimePeriodSelector } from '@/components/TimePeriodSelector';
 import { Badge } from '@/components/ui/badge';
-import { useContacts } from '@/hooks/useContacts';
-import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 import { useFinancialMetrics, useKPIs } from '@/hooks/useFinancialData';
 import { usePeriodComparison } from '@/hooks/usePeriodComparison';
 import { useRevenueDrillDown } from '@/hooks/useRevenueDrillDown';
 import { useRevenueProfitData } from '@/hooks/useRevenueProfitData';
-import { ArrowDownLeft, ArrowUpRight, DollarSign, Plus, Repeat, TrendingUp } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, DollarSign, Repeat, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
+
+const formatBRL = (amount: number) =>
+  `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Overview() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
-  const [filters] = useState<{ currency: string; dateRange?: { from?: Date; to?: Date } }>({
-    currency: 'BRL',
-    dateRange: undefined,
-  });
-  const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency);
-  const [contactsDialogOpen, setContactsDialogOpen] = useState(false);
-  const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
-  const { contacts, isLoading: contactsLoading } = useContacts();
 
   // Drill-down state for Revenue/Profit chart
   const [drillDownParams, setDrillDownParams] = useState<{
@@ -36,28 +26,20 @@ export default function Overview() {
 
   const { data: drillDownData, isLoading: drillDownLoading } = useRevenueDrillDown(drillDownParams);
 
-  const { data: metrics, isLoading: metricsLoading } = useFinancialMetrics(filters.dateRange);
-  const { data: kpis, isLoading: kpisLoading } = useKPIs();
-  const { data: revenueProfitData, isLoading: revenueProfitLoading } = useRevenueProfitData(
-    filters.dateRange
-  );
+  const { data: metrics } = useFinancialMetrics({});
+  const { data: kpis } = useKPIs();
+  const { data: revenueProfitData } = useRevenueProfitData({});
 
-  const { data: periodComparison, isLoading: comparisonLoading } =
-    usePeriodComparison(selectedPeriod);
-
-  const formatWithCurrency = (amount: number) => {
-    const converted = convertAmount(amount);
-    return `${currencySymbol}${converted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const { data: periodComparison } = usePeriodComparison(selectedPeriod);
 
   // Helper function to get metric by type
   const getMetric = (type: string) => {
-    return metrics?.find((m) => m.metric_type === type);
+    return metrics?.find((m: { metric_type: string }) => m.metric_type === type);
   };
 
   // Helper function to get KPI by name
   const getKPI = (name: string) => {
-    return kpis?.find((k) => k.kpi_name === name);
+    return kpis?.find((k: { kpi_name: string }) => k.kpi_name === name);
   };
 
   // Handle chart point click for drill-down
@@ -97,12 +79,8 @@ export default function Overview() {
     return `${sign}${growth.toFixed(1)}%`;
   };
   const revenue = getMetric('revenue');
-  const expenses = getMetric('expenses');
   const profit = getMetric('profit');
   const cashFlow = getMetric('cash_flow');
-  const activeCustomers = getKPI('Active Customers');
-  const totalOrders = getKPI('Total Orders');
-  const conversionRate = getKPI('Conversion Rate');
   return (
     <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
       {/* Main Content */}
@@ -118,7 +96,7 @@ export default function Overview() {
             <h2 className="text-base md:text-lg mb-2 opacity-90">Total de Ativos Financeiros</h2>
             <div className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
               {profit || revenue ? (
-                formatWithCurrency((profit?.amount || 0) + (revenue?.amount || 0))
+                formatBRL((profit?.amount || 0) + (revenue?.amount || 0))
               ) : (
                 <Badge variant="secondary" className="text-lg px-4 py-2">
                   Sem Dados
@@ -149,7 +127,7 @@ export default function Overview() {
             <h3 className="text-xs md:text-sm text-muted-foreground mb-1">Receita</h3>
             <div className="text-xl md:text-2xl font-bold mb-2">
               {periodComparison ? (
-                formatWithCurrency(periodComparison.current.revenue)
+                formatBRL(periodComparison.current.revenue)
               ) : (
                 <Badge variant="secondary" className="text-xs">
                   Sem Dados
@@ -185,7 +163,7 @@ export default function Overview() {
             <h3 className="text-xs md:text-sm text-muted-foreground mb-1">Despesas</h3>
             <div className="text-xl md:text-2xl font-bold mb-2">
               {periodComparison ? (
-                formatWithCurrency(periodComparison.current.expenses)
+                formatBRL(periodComparison.current.expenses)
               ) : (
                 <Badge variant="secondary" className="text-xs">
                   Sem Dados
@@ -223,7 +201,7 @@ export default function Overview() {
             <h3 className="text-xs md:text-sm text-muted-foreground mb-1">Lucro</h3>
             <div className="text-xl md:text-2xl font-bold mb-2">
               {periodComparison ? (
-                formatWithCurrency(periodComparison.current.profit)
+                formatBRL(periodComparison.current.profit)
               ) : (
                 <Badge variant="secondary" className="text-xs">
                   Sem Dados
@@ -259,7 +237,7 @@ export default function Overview() {
             <h3 className="text-xs md:text-sm text-muted-foreground mb-1">Fluxo de Caixa</h3>
             <div className="text-xl md:text-2xl font-bold mb-2">
               {periodComparison ? (
-                formatWithCurrency(periodComparison.current.cashFlow)
+                formatBRL(periodComparison.current.cashFlow)
               ) : (
                 <Badge variant="secondary" className="text-xs">
                   Sem Dados
@@ -305,14 +283,14 @@ export default function Overview() {
                 <div className="text-right">
                   <div className="text-sm md:text-base font-semibold">
                     {revenue ? (
-                      formatWithCurrency(revenue.amount)
+                      formatBRL(revenue.amount)
                     ) : (
                       <Badge variant="secondary" className="text-xs">
                         Sem Dados
                       </Badge>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground">{filters.currency}</div>
+                  <div className="text-xs text-muted-foreground">BRL</div>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -325,14 +303,14 @@ export default function Overview() {
                 <div className="text-right">
                   <div className="text-sm md:text-base font-semibold">
                     {cashFlow ? (
-                      formatWithCurrency(Math.abs(cashFlow.amount || 0))
+                      formatBRL(Math.abs(cashFlow.amount || 0))
                     ) : (
                       <Badge variant="secondary" className="text-xs">
                         Sem Dados
                       </Badge>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground">{filters.currency}</div>
+                  <div className="text-xs text-muted-foreground">BRL</div>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -345,14 +323,14 @@ export default function Overview() {
                 <div className="text-right">
                   <div className="text-sm md:text-base font-semibold">
                     {profit ? (
-                      formatWithCurrency(profit.amount)
+                      formatBRL(profit.amount)
                     ) : (
                       <Badge variant="secondary" className="text-xs">
                         Sem Dados
                       </Badge>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground">{filters.currency}</div>
+                  <div className="text-xs text-muted-foreground">BRL</div>
                 </div>
               </div>
             </div>
@@ -362,7 +340,7 @@ export default function Overview() {
         {/* Revenue vs Profit Chart */}
         <RevenueProfitChart
           data={revenueProfitData || []}
-          formatCurrency={formatWithCurrency}
+          formatCurrency={formatBRL}
           onPointClick={handleChartPointClick}
         />
 
@@ -390,146 +368,7 @@ export default function Overview() {
           </div>
         </Card>
 
-        {/* Contacts & Address Book - Mobile/Tablet version */}
-        <Card
-          className="p-4 md:p-6 cursor-pointer hover:shadow-md transition-shadow lg:hidden"
-          onClick={() => setContactsDialogOpen(true)}
-        >
-          <div className="flex items-center justify-between mb-3 md:mb-4">
-            <h3 className="text-base md:text-lg">Contatos e Agenda</h3>
-            <Button variant="ghost" size="sm">
-              Ver Todos
-            </Button>
-          </div>
-          {contactsLoading ? (
-            <div className="flex items-center justify-center py-3 md:py-4">
-              <div className="text-xs md:text-sm text-muted-foreground">Carregando...</div>
-            </div>
-          ) : contacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-3 md:py-4 text-center">
-              <p className="text-xs md:text-sm text-muted-foreground mb-3">Nenhum contato ainda</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setContactsDialogOpen(true);
-                }}
-              >
-                <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                <span className="text-xs md:text-sm">Adicionar primeiro contato</span>
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 md:gap-3">
-              <div
-                className="flex flex-col items-center gap-1 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setContactsDialogOpen(true);
-                }}
-              >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-muted rounded-xl flex items-center justify-center hover:bg-muted-hover transition-colors">
-                  <Plus className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
-                </div>
-                <span className="text-xs text-muted-foreground">Adicionar</span>
-              </div>
-              {contacts.slice(0, 4).map((contact) => (
-                <div key={contact.id} className="flex flex-col items-center gap-1">
-                  <ContactAvatar
-                    name={contact.name}
-                    color={contact.avatar_color}
-                    className="w-8 h-8 md:w-10 md:h-10"
-                  />
-                  <span className="text-xs text-muted-foreground truncate max-w-[60px]">
-                    {contact.name.split(' ')[0]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
       </div>
-
-      {/* Right Sidebar - Desktop only */}
-      <div className="w-80 space-y-4 md:space-y-6 hidden lg:block">
-        {/* Real-time Notifications */}
-        <Card className="p-4 md:p-6">
-          <h3 className="text-base md:text-lg mb-2">Notificações em tempo real</h3>
-          <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
-            Proteja suas contas e finanças com notificações por e-mail e alertas do FinanceFlow para
-            todas as suas transações.
-          </p>
-          <Button
-            className="w-full text-xs md:text-sm"
-            onClick={() => setNotificationDialogOpen(true)}
-          >
-            Configurar Notificações
-            <ArrowUpRight className="w-3 h-3 md:w-4 md:h-4 ml-2" />
-          </Button>
-        </Card>
-
-        {/* Contacts & Address Book (Right Sidebar) */}
-        <Card
-          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setContactsDialogOpen(true)}
-        >
-          <h4 className="text-base md:text-lg mb-3">Contatos e Agenda</h4>
-          {contactsLoading ? (
-            <div className="flex items-center justify-center py-3 md:py-4">
-              <div className="text-xs md:text-sm text-muted-foreground">Carregando...</div>
-            </div>
-          ) : contacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-3 md:py-4 text-center">
-              <p className="text-xs md:text-sm text-muted-foreground mb-3">Nenhum contato ainda</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setContactsDialogOpen(true);
-                }}
-              >
-                <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                <span className="text-xs md:text-sm">Adicionar Contato</span>
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-start gap-2">
-              <div
-                className="flex flex-col items-center gap-1 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setContactsDialogOpen(true);
-                }}
-              >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-muted rounded-xl flex items-center justify-center hover:bg-muted-hover transition-colors">
-                  <Plus className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
-                </div>
-                <span className="text-xs text-muted-foreground">Adicionar</span>
-              </div>
-              {contacts.slice(0, 5).map((contact) => (
-                <div key={contact.id} className="flex flex-col items-center gap-1">
-                  <ContactAvatar
-                    name={contact.name}
-                    color={contact.avatar_color}
-                    className="w-8 h-8 md:w-10 md:h-10"
-                  />
-                  <span className="text-xs text-muted-foreground truncate max-w-[60px]">
-                    {contact.name.split(' ')[0]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
-
-      <ContactsDialog open={contactsDialogOpen} onOpenChange={setContactsDialogOpen} />
-      <NotificationSettingsDialog
-        open={notificationDialogOpen}
-        onOpenChange={setNotificationDialogOpen}
-      />
     </div>
   );
 }

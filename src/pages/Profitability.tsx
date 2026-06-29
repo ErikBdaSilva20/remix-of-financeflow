@@ -1,4 +1,3 @@
-import { FilterHeader, FilterState } from '@/components/FilterHeader';
 import { MarginTrendsChart } from '@/components/MarginTrendsChart';
 import { MetricCard } from '@/components/MetricCard';
 import { ProfitWaterfallChart } from '@/components/ProfitWaterfallChart';
@@ -6,7 +5,6 @@ import { ProfitabilityDataTable } from '@/components/ProfitabilityDataTable';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 import {
   formatMarginPercentage,
   useMarginTrends,
@@ -18,29 +16,16 @@ import { useProfitabilityDrillDown } from '@/hooks/useProfitabilityDrillDown';
 import { DollarSign, Percent, PieChart, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+const formatBRL = (amount: number) =>
+  `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 const Profitability = () => {
-  const [filters, setFilters] = useState<FilterState>({
-    dateRange: {},
-    currency: 'BRL',
-  });
-  const { data: profitabilityData, isLoading } = useProfitabilityData({
-    ...filters,
-    currency: filters.currency || 'BRL',
-  });
-  const profitBreakdown = useProfitBreakdown({ ...filters, currency: filters.currency || 'BRL' });
-  const marginTrends = useMarginTrends({ ...filters, currency: filters.currency || 'BRL' });
-  const { data: marginTrendsData } = useMarginTrendsTimeSeries({
-    ...filters,
-    currency: filters.currency || 'BRL',
-  });
-  const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency || 'USD');
+  const { data: profitabilityData, isLoading } = useProfitabilityData({ dateRange: {}, currency: 'BRL' });
+  const profitBreakdown = useProfitBreakdown({ dateRange: {}, currency: 'BRL' });
+  const marginTrends = useMarginTrends({ dateRange: {}, currency: 'BRL' });
+  const { data: marginTrendsData } = useMarginTrendsTimeSeries({ dateRange: {}, currency: 'BRL' });
   const { drillDownData, handleWaterfallClick, handleMarginClick, clearDrillDown } =
     useProfitabilityDrillDown();
-
-  // Format currency - amounts are already converted in the hooks
-  const formatWithCurrency = (amount: number) => {
-    return `${currencySymbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
 
   // Check if there's any actual data - memoized to prevent recalculation on every render
   const hasData = useMemo(
@@ -91,10 +76,7 @@ const Profitability = () => {
   };
 
   return (
-    <div className="space-y-0">
-      <FilterHeader filters={filters} onFiltersChange={setFilters} showFxCurrency={true} />
-
-      <div className="space-y-6 p-4">
+    <div className="space-y-6 p-4">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl tracking-tight">Análise de Rentabilidade</h1>
@@ -125,55 +107,28 @@ const Profitability = () => {
           <MetricCard
             title="Lucro Operacional"
             value={
-              hasData ? formatWithCurrency(profitabilityData.operatingProfit) : `${currencySymbol}0`
+              hasData ? formatBRL(profitabilityData.operatingProfit) : `R$ 0,00`
             }
             // change={hasData ? formatChange(profitabilityData.profitGrowth) : undefined}
             changeType={getChangeType(profitabilityData.profitGrowth)}
             hasData={hasData}
             icon={<TrendingUp className="w-5 h-5" />}
           />
-          <MetricCard
-            title="EBITDA"
-            value={hasData ? formatWithCurrency(profitabilityData.ebitda) : `${currencySymbol}0`}
-            // change={hasData ? formatChange(profitabilityData.profitGrowth * 0.8) : undefined}
-            changeType={getChangeType(profitabilityData.profitGrowth * 0.8)}
-            hasData={hasData}
-            icon={<Target className="w-5 h-5" />}
-          />
         </div>
 
         {/* Charts Section */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {hasData ? (
-            <>
-              {/* Profit Waterfall Chart */}
-              <ProfitWaterfallChart
-                revenue={profitBreakdown.revenue}
-                cogs={profitBreakdown.cogs}
-                operatingExpenses={profitBreakdown.operatingExpenses}
-                onBarClick={handleWaterfallClick}
-                formatCurrency={formatWithCurrency}
-              />
+          {/* Profit Waterfall Chart */}
+          <ProfitWaterfallChart
+            revenue={profitBreakdown.revenue}
+            cogs={profitBreakdown.cogs}
+            operatingExpenses={profitBreakdown.operatingExpenses}
+            onBarClick={handleWaterfallClick}
+            formatCurrency={formatBRL}
+          />
 
-              {/* Margin Trends Chart */}
-              <MarginTrendsChart data={marginTrendsData} onPointClick={handleMarginClick} />
-            </>
-          ) : (
-            <>
-              <Card className="p-6">
-                <h3 className="text-lg mb-4">Cascata de Lucro</h3>
-                <div className="flex items-center justify-center h-80">
-                  <Badge variant="secondary">Sem dados disponíveis</Badge>
-                </div>
-              </Card>
-              <Card className="p-6">
-                <h3 className="text-lg mb-4">Tendências de Margem</h3>
-                <div className="flex items-center justify-center h-80">
-                  <Badge variant="secondary">Sem dados disponíveis</Badge>
-                </div>
-              </Card>
-            </>
-          )}
+          {/* Margin Trends Chart */}
+          <MarginTrendsChart data={marginTrendsData} onPointClick={handleMarginClick} />
         </div>
 
         {/* Drill-down Data Table */}
@@ -181,7 +136,7 @@ const Profitability = () => {
           <ProfitabilityDataTable
             drillDownData={drillDownData}
             onClose={clearDrillDown}
-            formatCurrency={formatWithCurrency}
+            formatCurrency={formatBRL}
           />
         )}
 
@@ -192,144 +147,97 @@ const Profitability = () => {
               <PieChart className="w-5 h-5 text-primary" />
               <h3 className="text-lg">Detalhamento de Lucro</h3>
             </div>
-            {hasData ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Receita</span>
-                  <span className="font-medium text-success-600">
-                    {formatWithCurrency(profitBreakdown.revenue)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Custo das Mercadorias Vendidas (CPV)</span>
-                  <span className="font-medium text-error-600">
-                    -{formatWithCurrency(profitBreakdown.cogs)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center border-t pt-2">
-                  <span className="text-sm font-medium">Lucro Bruto</span>
-                  <span className="font-semibold text-success-600">
-                    {formatWithCurrency(profitBreakdown.grossProfit)}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground text-right">
-                  Margem: {formatMarginPercentage(profitabilityData.grossMargin)}
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Despesas Operacionais</span>
-                  <span className="font-medium text-error-600">
-                    -{formatWithCurrency(profitBreakdown.operatingExpenses)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center border-t pt-2">
-                  <span className="text-sm font-medium">Lucro Líquido</span>
-                  <span className="font-semibold text-primary-600">
-                    {formatWithCurrency(profitBreakdown.netProfit)}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground text-right">
-                  Margem: {formatMarginPercentage(profitabilityData.netMargin)}
-                </div>
-
-                <div className="flex justify-between items-center border-t pt-2">
-                  <span className="text-sm font-medium">EBITDA</span>
-                  <span className="font-semibold text-secondary-600">
-                    {formatWithCurrency(profitBreakdown.ebitda)}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground text-right">
-                  Margem: {formatMarginPercentage(profitabilityData.ebitdaMargin)}
-                </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Receita</span>
+                <span className="font-medium text-success-600">
+                  {formatBRL(profitBreakdown.revenue)}
+                </span>
               </div>
-            ) : (
-              <div className="flex items-center justify-center py-8">
-                <Badge variant="secondary">Sem dados disponíveis</Badge>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Despesas Operacionais</span>
+                <span className="font-medium text-error-600">
+                  -{formatBRL(profitBreakdown.operatingExpenses)}
+                </span>
               </div>
-            )}
+              <div className="flex justify-between items-center border-t pt-2">
+                <span className="text-sm font-medium">Lucro Líquido</span>
+                <span className="font-semibold text-primary-600">
+                  {formatBRL(profitBreakdown.netProfit)}
+                </span>
+              </div>
+              <div className="text-xs text-muted-foreground text-right">
+                Margem: {formatMarginPercentage(profitabilityData.netMargin)}
+              </div>
+            </div>
           </Card>
 
           {/* Enhanced Margin Trends */}
           <Card className="p-6">
             <h3 className="text-lg mb-4">Desempenho Atual da Margem</h3>
-            {hasData ? (
-              <>
-                <div className="space-y-4">
-                  {marginTrends.map((trend, index) => {
-                    const IconComponent =
-                      trend.icon === 'up'
-                        ? TrendingUp
-                        : trend.icon === 'down'
-                          ? TrendingDown
-                          : Target;
-                    const iconColor =
-                      trend.changeType === 'positive'
-                        ? 'text-success-600'
-                        : trend.changeType === 'negative'
-                          ? 'text-error-600'
-                          : 'text-warning-600';
-                    const changeColor =
-                      trend.changeType === 'positive'
-                        ? 'text-success-600'
-                        : trend.changeType === 'negative'
-                          ? 'text-error-600'
-                          : 'text-warning-600';
+            <div className="space-y-4">
+              {marginTrends.map((trend, index) => {
+                const IconComponent =
+                  trend.icon === 'up'
+                    ? TrendingUp
+                    : trend.icon === 'down'
+                      ? TrendingDown
+                      : Target;
+                const iconColor =
+                  trend.changeType === 'positive'
+                    ? 'text-success-600'
+                    : trend.changeType === 'negative'
+                      ? 'text-error-600'
+                      : 'text-warning-600';
 
-                    return (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <IconComponent className={`w-4 h-4 ${iconColor}`} />
-                          <span className="text-sm">{trendNamesPt[trend.name] || trend.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium">{formatMarginPercentage(trend.current)}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Performance Indicators */}
-                <div className="mt-6 pt-4 border-t">
-                  <h4 className="text-sm mb-3">Status de Desempenho</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Saúde da Rentabilidade</span>
-                      <span
-                        className={`font-medium ${
-                          profitabilityData.netMargin >= 15
-                            ? 'text-success-600'
-                            : profitabilityData.netMargin >= 8
-                              ? 'text-warning-600'
-                              : 'text-error-600'
-                        }`}
-                      >
-                        {profitabilityData.netMargin >= 15
-                          ? 'Excelente'
-                          : profitabilityData.netMargin >= 8
-                            ? 'Boa'
-                            : 'Precisa de Melhorias'}
-                      </span>
+                return (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <IconComponent className={`w-4 h-4 ${iconColor}`} />
+                      <span className="text-sm">{trendNamesPt[trend.name] || trend.name}</span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Trajetória de Crescimento</span>
-                      <span
-                        className={`font-medium ${profitabilityData.profitGrowth >= 5 ? 'text-success-600' : 'text-warning-600'}`}
-                      >
-                        {profitabilityData.profitGrowth >= 5 ? 'Crescimento Forte' : 'Estável'}
-                      </span>
+                    <div className="text-right">
+                      <div className="font-medium">{formatMarginPercentage(trend.current)}</div>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* Performance Indicators */}
+            <div className="mt-6 pt-4 border-t">
+              <h4 className="text-sm mb-3">Status de Desempenho</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Saúde da Rentabilidade</span>
+                  <span
+                    className={`font-medium ${
+                      profitabilityData.netMargin >= 15
+                        ? 'text-success-600'
+                        : profitabilityData.netMargin >= 8
+                          ? 'text-warning-600'
+                          : 'text-error-600'
+                    }`}
+                  >
+                    {profitabilityData.netMargin >= 15
+                      ? 'Excelente'
+                      : profitabilityData.netMargin >= 8
+                        ? 'Boa'
+                        : 'Precisa de Melhorias'}
+                  </span>
                 </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center py-8">
-                <Badge variant="secondary">Sem dados disponíveis</Badge>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Trajetória de Crescimento</span>
+                  <span
+                    className={`font-medium ${profitabilityData.profitGrowth >= 5 ? 'text-success-600' : 'text-warning-600'}`}
+                  >
+                    {profitabilityData.profitGrowth >= 5 ? 'Crescimento Forte' : 'Estável'}
+                  </span>
+                </div>
               </div>
-            )}
+            </div>
           </Card>
         </div>
-      </div>
     </div>
   );
 };

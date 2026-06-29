@@ -29,8 +29,8 @@ export function usePeriodComparison(period: TimePeriod) {
         fetchTable<ExpenseNew>('expenses_new'),
       ]);
 
-      const sumInv = (s: string, e: string) => invoices.filter(i => i.issue_date >= s && i.issue_date <= e).reduce((a, i) => a + i.amount_total, 0);
-      const sumExp = (s: string, e: string) => expenses.filter(x => x.date >= s && x.date <= e).reduce((a, x) => a + x.amount, 0);
+      const sumInv = (s: string, e: string) => invoices.filter(i => i.issue_date >= s && i.issue_date <= e).reduce((a, i) => a + Number(i.amount_total || 0), 0);
+      const sumExp = (s: string, e: string) => expenses.filter(x => x.date >= s && x.date <= e).reduce((a, x) => a + Number(x.amount || 0), 0);
 
       const cR = sumInv(fd(cS), fd(cE)); const cX = sumExp(fd(cS), fd(cE)); const cP = cR - cX;
       const pR = sumInv(fd(pS), fd(pE)); const pX = sumExp(fd(pS), fd(pE)); const pP = pR - pX;

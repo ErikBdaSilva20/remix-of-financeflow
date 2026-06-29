@@ -55,8 +55,14 @@ export function DonutChart({ data, title, centerValue, centerLabel, className, o
 
   return (
     <Card className={className}>
-      <CardHeader>
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        {centerValue && (
+          <div className="text-right mt-2 sm:mt-0">
+            <div className="text-2xl font-bold text-foreground leading-tight">{centerValue}</div>
+            {centerLabel && <div className="text-xs text-muted-foreground">{centerLabel}</div>}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="pb-6">
         <div className="space-y-4">
@@ -81,15 +87,6 @@ export function DonutChart({ data, title, centerValue, centerLabel, className, o
               </PieChart>
             </ResponsiveContainer>
 
-            {/* Center value display */}
-            {centerValue && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                <div className="text-center">
-                  <div className="text-xl sm:text-3xl font-bold text-foreground leading-tight">{centerValue}</div>
-                  {centerLabel && <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">{centerLabel}</div>}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Legend */}

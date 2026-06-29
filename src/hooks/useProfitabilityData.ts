@@ -263,7 +263,7 @@ export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date;
         const key = useDailyGranularity ? format(dateObj, "MMM dd") : format(dateObj, "MMM yyyy");
         const dateKey = useDailyGranularity ? format(dateObj, "yyyy-MM-dd") : format(dateObj, "yyyy-MM");
         if (!revenueByPeriod[key]) revenueByPeriod[key] = { period: key, dateKey, revenue: 0 };
-        revenueByPeriod[key].revenue += convertAmount(row.amount_total, 'USD', row.issue_date);
+        revenueByPeriod[key].revenue += convertAmount(Number(row.amount_total || 0), 'USD', row.issue_date);
       });
 
       const expensesByPeriod: Record<string, { cogs: number; opex: number }> = {};
@@ -272,7 +272,7 @@ export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date;
         const key = useDailyGranularity ? format(dateObj, "MMM dd") : format(dateObj, "MMM yyyy");
         if (!expensesByPeriod[key]) expensesByPeriod[key] = { cogs: 0, opex: 0 };
         const category = (row.category || '').toLowerCase();
-        const converted = convertAmount(row.amount, 'USD', row.date);
+        const converted = convertAmount(Number(row.amount || 0), 'USD', row.date);
         if (category.includes('cogs') || category.includes('cost of goods')) {
           expensesByPeriod[key].cogs += converted;
         } else {

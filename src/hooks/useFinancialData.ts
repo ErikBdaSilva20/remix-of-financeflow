@@ -104,7 +104,7 @@ export function useFinancialMetrics(dateRange?: { from?: Date; to?: Date }) {
       const monthlyTotals: Record<string, number> = {};
       filtered.forEach(inv => {
         const month = inv.issue_date.slice(0, 7);
-        monthlyTotals[month] = (monthlyTotals[month] || 0) + inv.amount_total;
+        monthlyTotals[month] = (monthlyTotals[month] || 0) + Number(inv.amount_total || 0);
       });
 
       const months = Object.keys(monthlyTotals).sort();
@@ -137,7 +137,7 @@ export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _curre
       const grouped: Record<string, number> = {};
       filtered.forEach(inv => {
         const key = inv.channel || 'Other';
-        grouped[key] = (grouped[key] || 0) + inv.amount_total;
+        grouped[key] = (grouped[key] || 0) + Number(inv.amount_total || 0);
       });
 
       const total = Object.values(grouped).reduce((s, v) => s + v, 0);
@@ -163,7 +163,7 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
       const grouped: Record<string, number> = {};
       filtered.forEach(exp => {
         const key = exp.category || 'Other';
-        grouped[key] = (grouped[key] || 0) + exp.amount;
+        grouped[key] = (grouped[key] || 0) + Number(exp.amount || 0);
       });
 
       const total = Object.values(grouped).reduce((s, v) => s + v, 0);
@@ -199,9 +199,9 @@ export function useExpenseTrends(dateRange?: { from?: Date; to?: Date }) {
         const key = daily ? format(d, "MMM dd") : format(d, "MMM yyyy");
         const dateKey = daily ? format(d, "yyyy-MM-dd") : format(d, "yyyy-MM");
         if (!agg[key]) agg[key] = { period: key, dateKey, expenses: 0, cogs: 0, opex: 0 };
-        agg[key].expenses += exp.amount;
-        if (exp.category === 'cogs') agg[key].cogs += exp.amount;
-        else agg[key].opex += exp.amount;
+        agg[key].expenses += Number(exp.amount || 0);
+        if (exp.category === 'cogs') agg[key].cogs += Number(exp.amount || 0);
+        else agg[key].opex += Number(exp.amount || 0);
       });
 
       return Object.values(agg).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
@@ -220,31 +220,41 @@ export function useRevenueTrends(dateRange?: { from?: Date; to?: Date }) {
       const filteredInv = filterByDateRange(invoices, 'issue_date', dateRange);
       const filteredPmt = filterByDateRange(payments, 'date', dateRange);
 
-      if (filteredInv.length === 0 && filteredPmt.length === 0) return [];
-
+      // Ensure we always have a timeline even if there's no data
       const allDates = [
         ...filteredInv.map(i => i.issue_date),
         ...filteredPmt.map(p => p.date),
       ].sort();
       const rangeDays = allDates.length > 1
         ? Math.abs((new Date(allDates[allDates.length - 1]).getTime() - new Date(allDates[0]).getTime()) / 86400000)
-        : 0;
-      const daily = rangeDays <= 30;
+        : 180;
+      const daily = rangeDays <= 30 && dateRange?.from;
 
       const agg: Record<string, RevenueTrendData> = {};
+
+      // Initialize the last 6 months to ensure the chart always renders
+      if (!daily) {
+        const today = new Date();
+        for (let i = 5; i >= 0; i--) {
+          const d = subMonths(today, i);
+          const key = format(d, "MMM yyyy");
+          const dateKey = format(d, "yyyy-MM");
+          agg[key] = { period: key, dateKey, accrual: 0, cash: 0 };
+        }
+      }
       filteredInv.forEach(inv => {
         const d = new Date(inv.issue_date + 'T00:00:00');
         const key = daily ? format(d, "MMM dd") : format(d, "MMM yyyy");
         const dateKey = daily ? format(d, "yyyy-MM-dd") : format(d, "yyyy-MM");
         if (!agg[key]) agg[key] = { period: key, dateKey, accrual: 0, cash: 0 };
-        agg[key].accrual += inv.amount_total;
+        agg[key].accrual += Number(inv.amount_total || 0);
       });
       filteredPmt.forEach(pmt => {
         const d = new Date(pmt.date + 'T00:00:00');
         const key = daily ? format(d, "MMM dd") : format(d, "MMM yyyy");
         const dateKey = daily ? format(d, "yyyy-MM-dd") : format(d, "yyyy-MM");
         if (!agg[key]) agg[key] = { period: key, dateKey, accrual: 0, cash: 0 };
-        agg[key].cash += pmt.amount;
+        agg[key].cash += Number(pmt.amount || 0);
       });
 
       return Object.values(agg).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
@@ -267,7 +277,7 @@ export function useTopClients() {
       const customerMap = new Map(customers.map(c => [c.id, c.name]));
       const grouped: Record<string, number> = {};
       invoices.forEach(inv => {
-        if (inv.customer_id) grouped[inv.customer_id] = (grouped[inv.customer_id] || 0) + inv.amount_total;
+        if (inv.customer_id) grouped[inv.customer_id] = (grouped[inv.customer_id] || 0) + Number(inv.amount_total || 0);
       });
       return Object.entries(grouped)
         .map(([id, revenue]) => ({ id, name: customerMap.get(id) || 'Unknown', revenue, growth_rate: 0 }))
@@ -285,7 +295,7 @@ export function useVendors(_dateRange?: { from?: Date; to?: Date }) {
       const grouped: Record<string, { name: string; category: string; amount: number }> = {};
       bills.forEach(b => {
         if (!grouped[b.vendor_name]) grouped[b.vendor_name] = { name: b.vendor_name, category: b.category || 'Other', amount: 0 };
-        grouped[b.vendor_name].amount += b.open_amount;
+        grouped[b.vendor_name].amount += Number(b.open_amount || 0);
       });
       return Object.entries(grouped)
         .map(([, v], i) => ({ id: `vendor-${i}`, ...v }))
@@ -299,9 +309,12 @@ export function useKPIs() {
 }
 
 export function formatCurrency(amount: number): string {
-  if (amount >= 1000000) return `$${(amount / 1000000).toFixed(2)}M`;
-  if (amount >= 1000) return `$${(amount / 1000).toFixed(2)}K`;
-  return `$${amount.toFixed(2)}`;
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export function formatPercentage(percentage: number): string {
