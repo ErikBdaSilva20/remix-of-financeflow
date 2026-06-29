@@ -9,14 +9,20 @@ import { useFinancialMetrics, useKPIs } from '@/hooks/useFinancialData';
 import { usePeriodComparison } from '@/hooks/usePeriodComparison';
 import { useRevenueDrillDown } from '@/hooks/useRevenueDrillDown';
 import { useRevenueProfitData } from '@/hooks/useRevenueProfitData';
-import { ArrowDownLeft, ArrowUpRight, DollarSign, Repeat, TrendingUp } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, DollarSign, Repeat, TrendingUp, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { InvoiceDialog } from '@/components/InvoiceDialog';
+import { TransactionDialog } from '@/components/TransactionDialog';
+import { ExpenseDialog } from '@/components/ExpenseDialog';
 
 const formatBRL = (amount: number) =>
   `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Overview() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
 
   // Drill-down state for Revenue/Profit chart
   const [drillDownParams, setDrillDownParams] = useState<{
@@ -85,9 +91,22 @@ export default function Overview() {
     <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
       {/* Main Content */}
       <div className="flex-1 space-y-4 md:space-y-6">
-        {/* Period Selector */}
-        <div className="flex justify-end">
-          <TimePeriodSelector selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} />
+        {/* Period Selector & Quick Actions */}
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" className="bg-gradient-primary text-primary-foreground font-semibold" onClick={() => setInvoiceDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" /> Nova Fatura
+            </Button>
+            <Button size="sm" variant="secondary" className="font-semibold" onClick={() => setTransactionDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" /> Registrar Transação
+            </Button>
+            <Button size="sm" variant="outline" className="font-semibold" onClick={() => setExpenseDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" /> Nova Despesa
+            </Button>
+          </div>
+          <div className="flex justify-end">
+            <TimePeriodSelector selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} />
+          </div>
         </div>
 
         {/* Hero Card - Total Financial Assets */}
@@ -358,7 +377,6 @@ export default function Overview() {
           />
         )}
 
-        {/* Latest Transactions */}
         <Card className="p-4 md:p-6">
           <h3 className="text-base md:text-lg mb-3 md:mb-4">Últimas Transações</h3>
           <div className="flex items-center justify-center py-6 md:py-8">
@@ -367,8 +385,20 @@ export default function Overview() {
             </Badge>
           </div>
         </Card>
-
       </div>
+
+      <InvoiceDialog
+        open={invoiceDialogOpen}
+        onOpenChange={setInvoiceDialogOpen}
+      />
+      <TransactionDialog
+        open={transactionDialogOpen}
+        onOpenChange={setTransactionDialogOpen}
+      />
+      <ExpenseDialog
+        open={expenseDialogOpen}
+        onOpenChange={setExpenseDialogOpen}
+      />
     </div>
   );
 }

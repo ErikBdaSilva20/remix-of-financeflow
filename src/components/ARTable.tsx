@@ -11,27 +11,30 @@ import {
 } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+export interface ARInvoice {
+  id: string;
+  invoiceNumber: string;
+  customer: string;
+  issueDate: string;
+  dueDate: string;
+  status: string;
+  amount: number;
+  currency: string;
+  daysOutstanding: number;
+  agingBucket: string;
+}
+
 interface ARTableProps {
-  data: Array<{
-    id: string;
-    invoiceNumber: string;
-    customer: string;
-    issueDate: string;
-    dueDate: string;
-    status: string;
-    amount: number;
-    currency: string;
-    daysOutstanding: number;
-    agingBucket: string;
-  }>;
+  data: ARInvoice[];
   formatCurrency: (amount: number, currency: string, transactionDate?: string) => string;
   page?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
   onStatusChange?: (invoiceId: string, newStatus: string) => void;
+  onReceivePayment?: (invoice: ARInvoice) => void;
 }
 
-export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPageChange, onStatusChange }: ARTableProps) {
+export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPageChange, onStatusChange, onReceivePayment }: ARTableProps) {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "success" | "outline"> = {
       Open: "default",
@@ -114,7 +117,14 @@ export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPage
                 {invoice.agingBucket === "current" ? "0-30 dias" :
                  invoice.agingBucket === "30-60" ? "30-60 dias" : "60+ dias"}
               </Badge>
-              <span className="font-bold text-sm">{formatCurrency(invoice.amount, invoice.currency, invoice.issueDate)}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm">{formatCurrency(invoice.amount, invoice.currency, invoice.issueDate)}</span>
+                {onReceivePayment && invoice.status !== 'Paid' && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => onReceivePayment(invoice)}>
+                    Receber
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -133,6 +143,7 @@ export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPage
               <TableHead>Aging (Vencimento)</TableHead>
               <TableHead className="text-right">Dias Pendentes</TableHead>
               <TableHead className="text-right">Valor</TableHead>
+              {onReceivePayment && <TableHead className="text-right">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -175,6 +186,15 @@ export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPage
                 <TableCell className="text-right font-medium">
                   {formatCurrency(invoice.amount, invoice.currency, invoice.issueDate)}
                 </TableCell>
+                {onReceivePayment && (
+                  <TableCell className="text-right">
+                    {invoice.status !== 'Paid' && (
+                      <Button variant="outline" size="sm" className="h-7 text-xs px-3" onClick={() => onReceivePayment(invoice)}>
+                        Receber
+                      </Button>
+                    )}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

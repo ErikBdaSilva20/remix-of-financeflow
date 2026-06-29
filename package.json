@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n server,frontend -c blue,green \"pnpm dev:server\" \"pnpm dev:frontend\"",
-    "dev:server": "tsx watch --env-file .env src/server.ts",
+    "dev:server": "tsx watch --env-file .env scripts/dev-server.ts",
     "dev:frontend": "vite dev",
     "build": "tsc --noEmit && vite build",
     "build:dev": "vite build --mode development",

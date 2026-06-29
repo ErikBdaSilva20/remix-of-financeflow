@@ -1,11 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
-import { useAppDataPrefetch } from '@/hooks/useAppDataPrefetch';
-import { SearchResult, useGlobalSearch } from '@/hooks/useGlobalSearch';
+import { useAppDataPrefetch } from '@/hooks/infra/useAppDataPrefetch';
 import { useAuth } from '@/lib/auth';
 import { LogOut } from 'lucide-react';
-import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { FinancialSidebar } from './FinancialSidebar';
 import { ParticleBackground } from './ParticleBackground';

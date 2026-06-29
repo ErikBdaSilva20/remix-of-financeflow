@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { createContact as apiCreate, updateContact as apiUpdate, removeContact } from "@/lib/data/contacts.repo";
 import type { Contact, ContactInsert, ContactUpdate } from "@/lib/data/contacts.repo";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 
 export type { Contact };
 export type ContactInput = ContactInsert;

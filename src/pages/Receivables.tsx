@@ -1,7 +1,8 @@
 import { APTable } from '@/components/APTable';
-import { ARTable } from '@/components/ARTable';
+import { ARTable, type ARInvoice } from '@/components/ARTable';
 import { DonutChart } from '@/components/DonutChart';
 import { InvoiceDialog } from '@/components/InvoiceDialog';
+import { PaymentDialog } from '@/components/PaymentDialog';
 import { MetricCard } from '@/components/MetricCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,8 @@ const Receivables = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<ARInvoice | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [arSortBy, setArSortBy] = useState('due_date_asc');
   const [apSortBy, setApSortBy] = useState('due_date_asc');
@@ -360,6 +363,10 @@ const Receivables = () => {
             totalPages={arDetailedResult?.totalPages || 1}
             onPageChange={setArPage}
             onStatusChange={handleStatusChange}
+            onReceivePayment={(invoice) => {
+              setSelectedInvoice(invoice);
+              setPaymentDialogOpen(true);
+            }}
           />
         )}
       </div>
@@ -474,6 +481,11 @@ const Receivables = () => {
       </Card>
 
       <InvoiceDialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen} />
+      <PaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        invoice={selectedInvoice}
+      />
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 import type { BankTransaction } from "@/lib/data/bank_transactions.repo";
 
 export interface CashFlowDrillDownData {

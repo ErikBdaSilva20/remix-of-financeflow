@@ -4,7 +4,7 @@ import type { Payment } from '@/lib/data/payments.repo';
 import type { VendorBill } from '@/lib/data/vendor_bills.repo';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { fetchTable } from './tableCache';
+import { fetchTable } from './infra/tableCache';
 import { formatCurrency } from './useFinancialData';
 
 export interface ARAgingBucket {
@@ -146,6 +146,7 @@ export function useRecentActivity() {
         fetchTable<Payment>('payments'),
         fetchTable<Customer>('customers'),
       ]);
+      const invMap = new Map(invoices.map((i) => [i.id, i.customer_id]));
       const custMap = new Map(customers.map((c) => [c.id, c.name]));
       const activities = [
         ...invoices
@@ -158,7 +159,7 @@ export function useRecentActivity() {
             amount: Number((inv.original_amount ?? inv.amount_total) || 0),
             currency: inv.original_currency || 'BRL',
             status: inv.status,
-            customerName: custMap.get(inv.customer_id ?? '') || 'Unknown Customer',
+            customerName: custMap.get(inv.customer_id ?? '') || 'Cliente Desconhecido',
           })),
         ...payments
           .sort((a, b) => b.date.localeCompare(a.date))
@@ -170,7 +171,7 @@ export function useRecentActivity() {
             amount: Number((pmt.original_amount ?? pmt.amount) || 0),
             currency: pmt.original_currency || 'BRL',
             status: pmt.status,
-            customerName: 'Unknown Customer',
+            customerName: custMap.get(invMap.get(pmt.invoice_id ?? '') ?? '') || 'Cliente Desconhecido',
           })),
       ];
       return activities.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);

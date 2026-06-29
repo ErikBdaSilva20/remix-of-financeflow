@@ -43,7 +43,7 @@ export default function Customers() {
       toast.success('Cliente removido');
       setDeletingCustomer(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error?.message || 'Erro ao remover cliente');
     },
   });

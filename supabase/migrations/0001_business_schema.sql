@@ -74,6 +74,7 @@ create table if not exists customers (
   name        text not null,
   email       text,
   phone       text,
+  job_type    text,
   address     text,
   notes       text,
   created_at  timestamptz not null default now(),
@@ -108,7 +109,8 @@ create table if not exists invoices (
   owner_id            text not null references "user"(id) on delete cascade,
   customer_id         uuid references customers(id) on delete set null,
   issue_date          date not null,
-  due_date            date not null,
+  due_date            date,
+  scheduled_payment_date date,
   amount_total        numeric(18,2) not null,           -- em base currency
   open_amount         numeric(18,2) not null,           -- saldo em aberto (base)
   original_amount     numeric(18,2),
@@ -147,6 +149,7 @@ create or replace trigger trg_payments_updated_at
 create table if not exists expenses_new (
   id                  uuid primary key default gen_random_uuid(),
   owner_id            text not null references "user"(id) on delete cascade,
+  customer_id         uuid references customers(id) on delete set null,
   date                date not null,
   amount              numeric(18,2) not null,           -- em base currency
   original_amount     numeric(18,2),
@@ -217,6 +220,22 @@ create table if not exists accounting_settings (
 create index if not exists idx_accounting_settings_owner on accounting_settings(owner_id);
 create or replace trigger trg_accounting_settings_updated_at
   before update on accounting_settings for each row execute function touch_updated_at();
+
+-- Budgets (Orçamentos por categoria)
+create table if not exists budgets (
+  id             uuid primary key default gen_random_uuid(),
+  owner_id       text not null references "user"(id) on delete cascade,
+  category       text not null,
+  period_month   text not null, -- formato 'YYYY-MM' ou 'ALL' para padrão
+  amount         numeric(18,2) not null,
+  currency       text not null default 'BRL',
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  constraint uq_budgets_owner_cat_period unique (owner_id, category, period_month)
+);
+create index if not exists idx_budgets_owner on budgets(owner_id);
+create or replace trigger trg_budgets_updated_at
+  before update on budgets for each row execute function touch_updated_at();
 
 -- Relatórios agendados (config apenas; a ENTREGA automática é cron = extensão Onda 2)
 create table if not exists scheduled_reports (

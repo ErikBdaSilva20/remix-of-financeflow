@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 

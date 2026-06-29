@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
+import type { Budget } from "@/lib/data/budgets.repo";
 import type { Payment } from "@/lib/data/payments.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 import type { VendorBill } from "@/lib/data/vendor_bills.repo";
@@ -157,24 +158,36 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
   return useQuery({
     queryKey: ["expense-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const expenses = await fetchTable<ExpenseNew>('expenses_new');
+      const [expenses, budgets] = await Promise.all([
+        fetchTable<ExpenseNew>('expenses_new'),
+        fetchTable<Budget>('budgets'),
+      ]);
       const filtered = filterByDateRange(expenses, 'date', dateRange);
 
-      const grouped: Record<string, number> = {};
-      filtered.forEach(exp => {
-        const key = exp.category || 'Other';
-        grouped[key] = (grouped[key] || 0) + Number(exp.amount || 0);
+      const grouped: Record<string, { amount: number; budget: number }> = {};
+      
+      budgets.forEach(b => {
+        const key = b.category;
+        if (!grouped[key]) grouped[key] = { amount: 0, budget: 0 };
+        // If we want monthly budgets, we'd scale by month. We'll just take the amount for now.
+        grouped[key].budget += Number(b.amount || 0);
       });
 
-      const total = Object.values(grouped).reduce((s, v) => s + v, 0);
-      return Object.entries(grouped).map(([name, amount], i) => ({
+      filtered.forEach(exp => {
+        const key = exp.category || 'Other';
+        if (!grouped[key]) grouped[key] = { amount: 0, budget: 0 };
+        grouped[key].amount += Number(exp.amount || 0);
+      });
+
+      const total = Object.values(grouped).reduce((s, v) => s + v.amount, 0);
+      return Object.entries(grouped).map(([name, data], i) => ({
         id: `exp-${i}`,
         name,
         category: name,
-        amount,
-        percentage: total > 0 ? (amount / total) * 100 : 0,
+        amount: data.amount,
+        percentage: total > 0 ? (data.amount / total) * 100 : 0,
         growth_rate: 0,
-        budget_amount: 0,
+        budget_amount: data.budget,
       })) as ExpenseCategory[];
     },
   });

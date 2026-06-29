@@ -1,6 +1,7 @@
+import { BudgetDialog } from '@/components/BudgetDialog';
 import { DonutChart } from '@/components/DonutChart';
-import { ExpenseDrillDownTable } from '@/components/ExpenseDrillDownTable';
 import { ExpenseDialog } from '@/components/ExpenseDialog';
+import { ExpenseDrillDownTable } from '@/components/ExpenseDrillDownTable';
 import { MetricCard } from '@/components/MetricCard';
 import {
   AlertTriangle,
@@ -41,6 +42,7 @@ const formatBRL = (amount: number) =>
 
 const Expenses = () => {
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   const [vendorPage, setVendorPage] = useState(1);
   const vendorsPerPage = 5;
   const { data: metrics } = useFinancialMetrics();
@@ -282,7 +284,7 @@ const Expenses = () => {
                           }}
                         />
                         <Tooltip
-                          formatter={(value: any) => [formatBRL(value), '']}
+                          formatter={(value: number) => [formatBRL(value), '']}
                           labelStyle={{ color: '#0F172A' }}
                           contentStyle={{
                             backgroundColor: '#F0FDF4',
@@ -296,7 +298,7 @@ const Expenses = () => {
                           fill="#059669"
                           name="Despesas Totais"
                           radius={[8, 8, 0, 0]}
-                          onClick={(data: any) => {
+                          onClick={(data: { payload?: { dateKey?: string; period: string } }) => {
                             const payload = data?.payload;
                             if (!payload) return;
                             const dateKey = payload.dateKey as string | undefined;
@@ -335,7 +337,12 @@ const Expenses = () => {
 
         {/* Budget vs Actual - full width */}
         <Card className="p-6">
-          <h3 className="text-lg mb-4">Orçamento vs Realizado</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg">Orçamento vs Realizado</h3>
+            <Button variant="outline" size="sm" onClick={() => setBudgetDialogOpen(true)}>
+              Definir Orçamento
+            </Button>
+          </div>
           {totalBudget > 0 || totalExpenses > 0 ? (
             <div className="space-y-4">
               <div>
@@ -455,6 +462,7 @@ const Expenses = () => {
         </Card>
 
         <ExpenseDialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen} />
+        <BudgetDialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen} />
       </div>
   );
 };

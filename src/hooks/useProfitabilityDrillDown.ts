@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 import { DrillDownData } from "@/components/ProfitabilityDataTable";
@@ -24,7 +24,7 @@ export function useProfitabilityDrillDown() {
         fetchTable<ExpenseNew>('expenses_new'),
       ]);
 
-      let transactionData: any[] = [];
+      let transactionData: { date: string; dateKey: string; description: string; amount: number; category: string | undefined }[] = [];
 
       if (drillDownRequest.type === 'waterfall') {
         if (drillDownRequest.metric === 'Revenue') {

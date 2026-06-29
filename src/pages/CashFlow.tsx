@@ -6,7 +6,10 @@ import { listAccounts } from '@/lib/data/accounts.repo';
 import { listBankTransactions } from '@/lib/data/bank_transactions.repo';
 import { useQuery } from '@tanstack/react-query';
 import { differenceInDays, format, parseISO } from 'date-fns';
-import { Banknote, DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
+import { Banknote, DollarSign, TrendingDown, TrendingUp, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { TransactionDialog } from '@/components/TransactionDialog';
 import {
   CartesianGrid,
   Legend,
@@ -22,6 +25,7 @@ const formatBRL = (amount: number) =>
   `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const CashFlow = () => {
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const { drillDownData, handlePeriodClick, clearDrillDown } = useCashFlowDrillDown();
 
   const { data: cashflowData } = useQuery({
@@ -111,11 +115,18 @@ const CashFlow = () => {
 
   return (
     <div className="space-y-6 p-4">
-      <div>
-        <h1 className="text-3xl tracking-tight">Gestão de Fluxo de Caixa</h1>
-        <p className="text-muted-foreground">
-          Monitore entradas e saídas de caixa para manter liquidez saudável
-        </p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl tracking-tight text-foreground">Gestão de Fluxo de Caixa</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Monitore entradas e saídas de caixa para manter liquidez saudável
+          </p>
+        </div>
+        <Button onClick={() => setTransactionDialogOpen(true)} className="w-full sm:w-auto">
+          <Plus className="w-4 h-4 sm:mr-2" />
+          <span className="hidden sm:inline">Nova Transação</span>
+        </Button>
       </div>
 
       {/* Key Metrics */}
@@ -259,6 +270,11 @@ const CashFlow = () => {
           formatCurrency={formatBRL}
         />
       )}
+
+      <TransactionDialog
+        open={transactionDialogOpen}
+        onOpenChange={setTransactionDialogOpen}
+      />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Plus, Trash2, TrendingUp, TrendingDown } from "lucide-react";
 import { useFinancialMetrics, useRevenueSources, useExpenseCategories, useTopClients, useVendors } from "@/hooks/useFinancialData";
 import { useScheduledReports } from "@/hooks/useScheduledReports";
+import type { ScheduledReport, ScheduledReportInput } from "@/hooks/useScheduledReports";
 import { ScheduleReportDialog } from "@/components/ScheduleReportDialog";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -23,7 +24,7 @@ const formatBRL = (amount: number) =>
 
 const Reports = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<any>(null);
+  const [editingSchedule, setEditingSchedule] = useState<ScheduledReport | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
 
@@ -35,15 +36,15 @@ const Reports = () => {
 
   const { scheduledReports, isLoading: isLoadingSchedules, createScheduledReport, updateScheduledReport, deleteScheduledReport } = useScheduledReports();
 
-  const revenue = metrics?.find((m: any) => m.metric_type === 'revenue');
-  const mrr = metrics?.find((m: any) => m.metric_type === 'mrr');
-  const totalExpenses = expenseCategories?.reduce((s: number, e: any) => s + e.amount, 0) ?? 0;
+  const revenue = metrics?.find((m: { metric_type: string; amount: number }) => m.metric_type === 'revenue');
+  const mrr = metrics?.find((m: { metric_type: string; amount: number }) => m.metric_type === 'mrr');
+  const totalExpenses = expenseCategories?.reduce((s: number, e: { amount: number }) => s + e.amount, 0) ?? 0;
   const grossProfit = (revenue?.amount ?? 0) - totalExpenses;
   const margin = revenue?.amount ? (grossProfit / revenue.amount) * 100 : 0;
 
   const isLoading = metricsLoading || revenueLoading || expenseLoading;
 
-  const handleScheduleSubmit = async (data: any) => {
+  const handleScheduleSubmit = async (data: Partial<ScheduledReportInput>) => {
     try {
       if (editingSchedule) {
         updateScheduledReport.mutate({ id: editingSchedule.id, ...data });
@@ -171,7 +172,7 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {revenueSources.map((src: any, i: number) => (
+                      {revenueSources.map((src: { name: string; amount: number; percentage: number }, i: number) => (
                         <tr key={i} className="border-b border-border last:border-0">
                           <td className="px-6 py-3">{src.name}</td>
                           <td className="px-6 py-3 text-right font-medium">{formatBRL(src.amount)}</td>
@@ -206,7 +207,7 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {expenseCategories.map((exp: any, i: number) => (
+                      {expenseCategories.map((exp: { name: string; amount: number; percentage: number }, i: number) => (
                         <tr key={i} className="border-b border-border last:border-0">
                           <td className="px-6 py-3">{exp.name}</td>
                           <td className="px-6 py-3 text-right font-medium">{formatBRL(exp.amount)}</td>
@@ -241,7 +242,7 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {topClients.slice(0, 8).map((client: any, i: number) => (
+                      {topClients.slice(0, 8).map((client: { name: string; revenue: number }, i: number) => (
                         <tr key={i} className="border-b border-border last:border-0">
                           <td className="px-6 py-3 text-muted-foreground">{i + 1}</td>
                           <td className="px-6 py-3 font-medium">{client.name}</td>
@@ -274,7 +275,7 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {vendors.slice(0, 8).map((vendor: any, i: number) => (
+                      {vendors.slice(0, 8).map((vendor: { name: string; category: string; amount: number }, i: number) => (
                         <tr key={i} className="border-b border-border last:border-0">
                           <td className="px-6 py-3 font-medium">{vendor.name}</td>
                           <td className="px-6 py-3 text-muted-foreground">{vendor.category}</td>
@@ -311,7 +312,7 @@ const Reports = () => {
             <div className="text-center p-4 text-muted-foreground text-sm">Carregando agendamentos...</div>
           ) : scheduledReports && scheduledReports.length > 0 ? (
             <div className="space-y-2">
-              {scheduledReports.map((schedule: any) => (
+              {scheduledReports.map((schedule: ScheduledReport) => (
                 <div key={schedule.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <div className="font-medium text-sm">{schedule.report_name}</div>

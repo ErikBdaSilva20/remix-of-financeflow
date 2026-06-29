@@ -27,19 +27,11 @@ export const useCurrencyConversion = (currency: string = 'BRL') => {
     },
   });
 
-  const { data: fxRate } = useQuery({
-    queryKey: ["fx-rate", currency],
-    queryFn: async () => {
-      if (currency === 'USD') return { rate_to_base: 1, currency: 'USD' };
-      const rates = await listFxRates();
-      const match = rates
-        .filter(r => r.currency === currency)
-        .sort((a, b) => b.date.localeCompare(a.date));
-      if (!match.length) return { rate_to_base: 1, currency };
-      return { rate_to_base: match[0].rate_to_base, currency };
-    },
-    enabled: !!currency,
-  });
+  const fxRate = (() => {
+    if (currency === 'USD') return { rate_to_base: 1, currency: 'USD' };
+    if (!allFxRatesData) return undefined;
+    return allFxRatesData.latest[currency] || { rate_to_base: 1, currency };
+  })();
 
   const getFxRateForDate = (targetCurrency: string, date: string): number => {
     if (targetCurrency === 'USD') return 1;
@@ -69,6 +61,6 @@ export const useCurrencyConversion = (currency: string = 'BRL') => {
     fxRate,
     convertAmount,
     currencySymbol: getCurrencySymbol(currency),
-    isLoading: !fxRate,
+    isLoading: !allFxRatesData,
   };
 };

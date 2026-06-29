@@ -38,6 +38,10 @@ async function api<T>(method: string, path: string, body?: unknown): Promise<T> 
   });
 
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith('/auth/')) {
+      // Dev-server session lost (in-memory Map wiped on restart)
+      window.location.reload();
+    }
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`[gateway] ${method} ${path} → ${res.status}: ${text}`);
   }

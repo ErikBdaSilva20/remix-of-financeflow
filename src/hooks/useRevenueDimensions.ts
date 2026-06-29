@@ -1,7 +1,7 @@
 import type { Invoice } from '@/lib/data/invoices.repo';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { fetchTable } from './tableCache';
+import { fetchTable } from './infra/tableCache';
 
 interface DimensionData {
   dimension: string;

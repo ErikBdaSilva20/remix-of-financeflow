@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRevenueSources, useExpenseCategories, useFinancialMetrics } from "./useFinancialData";
 import { useAccountingSettings } from "./useAccountingSettings";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 import type { FxRate } from "@/lib/data/fx_rates.repo";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";

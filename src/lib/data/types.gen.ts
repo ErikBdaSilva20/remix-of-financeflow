@@ -218,6 +218,21 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['scheduled_reports']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Database['public']['Tables']['scheduled_reports']['Insert']>;
       };
+
+      budgets: {
+        Row: {
+          id: string;
+          owner_id: string;
+          category: string;
+          period_month: string;
+          amount: number;
+          currency: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['budgets']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Database['public']['Tables']['budgets']['Insert']>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

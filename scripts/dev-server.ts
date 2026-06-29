@@ -29,6 +29,7 @@ const TABLES_WITH_OWNER = new Set<string>([
   'filter_segments',
   'accounting_settings',
   'scheduled_reports',
+  'budgets',
 ]);
 
 const LOOKUP_TABLES = new Set<string>(['fx_rates']);
@@ -87,15 +88,14 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// Resolve owner_id pela sessão; em dev, cai no 1º usuário do banco como fallback
+// Resolve owner_id pela sessão
 async function resolveOwner(c: Parameters<typeof getCookie>[0]): Promise<string | null> {
   const token = getCookie(c, 'session');
   if (token) {
     const userId = sessions.get(token);
     if (userId) return userId;
   }
-  const result = await pool.query(`SELECT id FROM "user" LIMIT 1`);
-  return result.rows[0]?.id ?? null;
+  return null;
 }
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
@@ -122,7 +122,7 @@ app.post('/auth/sign-up', async (c) => {
     const user = r.rows[0];
     const token = crypto.randomUUID();
     sessions.set(token, user.id);
-    setCookie(c, 'session', token, { httpOnly: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 7 });
+    setCookie(c, 'session', token, { httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 7 });
     return c.json({ id: user.id, name: user.name, email: user.email, role: 'admin' });
   } catch (e: any) {
     // 23505 = unique_violation (email já cadastrado) — único erro seguro de expor
@@ -163,7 +163,7 @@ app.post('/auth/sign-in', async (c) => {
 
     const token = crypto.randomUUID();
     sessions.set(token, user.id);
-    setCookie(c, 'session', token, { httpOnly: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 7 });
+    setCookie(c, 'session', token, { httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 7 });
     return c.json({ id: user.id, name: user.name, email: user.email, role: 'admin' });
   } catch {
     return c.json({ error: 'Erro ao autenticar' }, 500);
