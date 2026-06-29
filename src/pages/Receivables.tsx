@@ -24,8 +24,11 @@ import {
   useDSO,
   useRecentActivity,
 } from '@/hooks/useReceivablesData';
+import { db } from '@/lib/data/client';
 import { AlertTriangle, CheckIcon, Clock, DollarSign, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 
 const Receivables = () => {
@@ -40,6 +43,25 @@ const Receivables = () => {
   const [arSortBy, setArSortBy] = useState('due_date_asc');
   const [apSortBy, setApSortBy] = useState('due_date_asc');
   const [arPage, setArPage] = useState(1);
+
+  const queryClient = useQueryClient();
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ invoiceId, status }: { invoiceId: string; status: string }) =>
+      db.table('invoices').update(invoiceId, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ar-detailed'] });
+      queryClient.invalidateQueries({ queryKey: ['ar-data'] });
+      toast.success('Status da fatura atualizado');
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar status');
+    },
+  });
+
+  const handleStatusChange = (invoiceId: string, newStatus: string) => {
+    updateStatusMutation.mutate({ invoiceId, status: newStatus });
+  };
 
   const { data: arData, isLoading: arLoading } = useARData(filters.dateRange);
   const { data: apData, isLoading: apLoading } = useAPData(filters.dateRange);
@@ -353,6 +375,7 @@ const Receivables = () => {
               page={arDetailedResult?.page || 1}
               totalPages={arDetailedResult?.totalPages || 1}
               onPageChange={setArPage}
+              onStatusChange={handleStatusChange}
             />
           )}
         </div>

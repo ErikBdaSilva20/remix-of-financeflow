@@ -64,6 +64,7 @@ export interface Database {
           name: string;
           email: string | null;
           phone: string | null;
+          job_type: string | null;
           address: string | null;
           notes: string | null;
           created_at: string;
@@ -97,7 +98,7 @@ export interface Database {
           owner_id: string;
           customer_id: string | null;
           issue_date: string;
-          due_date: string;
+          due_date: string | null;
           amount_total: number;
           open_amount: number;
           original_amount: number | null;
@@ -105,6 +106,7 @@ export interface Database {
           status: string;
           channel: string | null;
           product_id: string | null;
+          scheduled_payment_date: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -144,6 +146,7 @@ export interface Database {
           department: string | null;
           product: string | null;
           region: string | null;
+          customer_id: string | null;
           created_at: string;
           updated_at: string;
         };

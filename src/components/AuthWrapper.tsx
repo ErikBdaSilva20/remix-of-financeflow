@@ -55,7 +55,7 @@ function LoginForm() {
             <CardDescription>
               {mode === 'signin'
                 ? 'Digite seu email e senha para continuar.'
-                : 'O primeiro usuário se torna administrador.'}
+                : 'Preencha os dados para criar sua conta.'}
             </CardDescription>
           </CardHeader>
 

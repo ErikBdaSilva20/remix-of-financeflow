@@ -19,24 +19,20 @@ import {
   useRevenueSources,
 } from '@/hooks/useFinancialData';
 import { useProfitabilityData } from '@/hooks/useProfitabilityData';
+import { useRevenueProfitData } from '@/hooks/useRevenueProfitData';
+import { usePeriodComparison } from '@/hooks/usePeriodComparison';
 import { useState } from 'react';
 import { Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-
-// Mock data for Revenue vs Profit chart
-const revenueVsProfitData = [
-  { month: 'Jan', revenue: 245000, profit: 54000 },
-  { month: 'Fev', revenue: 268000, profit: 59000 },
-  { month: 'Mar', revenue: 285000, profit: 67000 },
-  { month: 'Abr', revenue: 272000, profit: 61000 },
-  { month: 'Mai', revenue: 295000, profit: 72000 },
-  { month: 'Jun', revenue: 310000, profit: 75000 },
-];
 
 export default function Index() {
   const { data: metrics, isLoading: metricsLoading } = useFinancialMetrics();
   const { data: revenueSources, isLoading: revenueLoading } = useRevenueSources();
   const { data: expenseCategories, isLoading: expensesLoading } = useExpenseCategories();
   const { data: profitabilityData, isLoading: profitLoading } = useProfitabilityData();
+  const { data: revenueProfitChartData } = useRevenueProfitData();
+  const { data: monthComparison } = usePeriodComparison('month');
+  const { data: quarterComparison } = usePeriodComparison('quarter');
+  const { data: yearComparison } = usePeriodComparison('year');
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
@@ -62,7 +58,7 @@ export default function Index() {
   const totalExpenses = expenseCategories?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
   const totalRevenue = revenueSources?.reduce((sum, rev) => sum + rev.amount, 0) || 0;
   const netProfit = totalRevenue - totalExpenses;
-  const cashFlow = netProfit * 0.85; // Simplified cash flow calculation
+  const cashFlow = monthComparison?.current.cashFlow ?? netProfit;
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -106,8 +102,8 @@ export default function Index() {
         <MetricCard
           title="Receita"
           value={revenue ? formatCurrency(revenue.amount) : formatCurrency(totalRevenue)}
-          change="+12.5% vs mês anterior"
-          changeType="positive"
+          change={monthComparison ? `${monthComparison.growth.revenue >= 0 ? '+' : ''}${monthComparison.growth.revenue.toFixed(1)}% vs mês anterior` : undefined}
+          changeType={monthComparison && monthComparison.growth.revenue >= 0 ? 'positive' : 'negative'}
           gradient="primary"
           icon={<DollarSign className="w-6 h-6" />}
           className="cursor-pointer hover:shadow-md transition-shadow"
@@ -116,8 +112,8 @@ export default function Index() {
         <MetricCard
           title="Despesas totais"
           value={expenses ? formatCurrency(expenses.amount) : formatCurrency(totalExpenses)}
-          change="+5.2% vs mês anterior"
-          changeType="negative"
+          change={monthComparison ? `${monthComparison.growth.expenses >= 0 ? '+' : ''}${monthComparison.growth.expenses.toFixed(1)}% vs mês anterior` : undefined}
+          changeType={monthComparison && monthComparison.growth.expenses >= 0 ? 'negative' : 'positive'}
           icon={<TrendingDown className="w-6 h-6" />}
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => setSelectedMetric('expenses')}
@@ -129,8 +125,8 @@ export default function Index() {
               ? formatCurrency(profitabilityData.netProfit)
               : formatCurrency(netProfit)
           }
-          change="+18.7% vs mês anterior"
-          changeType="positive"
+          change={monthComparison ? `${monthComparison.growth.profit >= 0 ? '+' : ''}${monthComparison.growth.profit.toFixed(1)}% vs mês anterior` : undefined}
+          changeType={monthComparison && monthComparison.growth.profit >= 0 ? 'positive' : 'negative'}
           gradient="success"
           icon={<TrendingUp className="w-6 h-6" />}
           className="cursor-pointer hover:shadow-md transition-shadow"
@@ -139,8 +135,8 @@ export default function Index() {
         <MetricCard
           title="Fluxo de Caixa"
           value={formatCurrency(cashFlow)}
-          change="+15.3% vs mês anterior"
-          changeType="positive"
+          change={monthComparison ? `${monthComparison.growth.cashFlow >= 0 ? '+' : ''}${monthComparison.growth.cashFlow.toFixed(1)}% vs mês anterior` : undefined}
+          changeType={monthComparison && monthComparison.growth.cashFlow >= 0 ? 'positive' : 'negative'}
           icon={<Activity className="w-6 h-6" />}
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => setSelectedMetric('cashflow')}
@@ -169,11 +165,11 @@ export default function Index() {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={revenueVsProfitData}
+                data={revenueProfitChartData || []}
                 margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
               >
                 <XAxis
-                  dataKey="month"
+                  dataKey="period"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12 }}
@@ -222,15 +218,21 @@ export default function Index() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Crescimento da Receita</span>
-              <span className="font-semibold text-success">+12.5%</span>
+              <span className={`font-semibold ${quarterComparison && quarterComparison.growth.revenue >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {quarterComparison ? `${quarterComparison.growth.revenue >= 0 ? '+' : ''}${quarterComparison.growth.revenue.toFixed(1)}%` : 'N/A'}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Crescimento do Lucro</span>
-              <span className="font-semibold text-success">+18.7%</span>
+              <span className={`font-semibold ${quarterComparison && quarterComparison.growth.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {quarterComparison ? `${quarterComparison.growth.profit >= 0 ? '+' : ''}${quarterComparison.growth.profit.toFixed(1)}%` : 'N/A'}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Crescimento das Despesas</span>
-              <span className="font-semibold text-warning">+5.2%</span>
+              <span className={`font-semibold ${quarterComparison && quarterComparison.growth.expenses <= 0 ? 'text-success' : 'text-warning'}`}>
+                {quarterComparison ? `${quarterComparison.growth.expenses >= 0 ? '+' : ''}${quarterComparison.growth.expenses.toFixed(1)}%` : 'N/A'}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -242,15 +244,21 @@ export default function Index() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Crescimento da Receita</span>
-              <span className="font-semibold text-success">+28.3%</span>
+              <span className={`font-semibold ${yearComparison && yearComparison.growth.revenue >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {yearComparison ? `${yearComparison.growth.revenue >= 0 ? '+' : ''}${yearComparison.growth.revenue.toFixed(1)}%` : 'N/A'}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Crescimento do Lucro</span>
-              <span className="font-semibold text-success">+35.1%</span>
+              <span className={`font-semibold ${yearComparison && yearComparison.growth.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {yearComparison ? `${yearComparison.growth.profit >= 0 ? '+' : ''}${yearComparison.growth.profit.toFixed(1)}%` : 'N/A'}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Crescimento das Despesas</span>
-              <span className="font-semibold text-success">+15.8%</span>
+              <span className={`font-semibold ${yearComparison && yearComparison.growth.expenses <= 0 ? 'text-success' : 'text-warning'}`}>
+                {yearComparison ? `${yearComparison.growth.expenses >= 0 ? '+' : ''}${yearComparison.growth.expenses.toFixed(1)}%` : 'N/A'}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -263,16 +271,20 @@ export default function Index() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Margem de Lucro</span>
               <span className="font-semibold">
-                {profitabilityData ? `${profitabilityData.netMargin.toFixed(1)}%` : '24.2%'}
+                {profitabilityData ? `${profitabilityData.netMargin.toFixed(1)}%` : 'N/A'}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Receita por Funcionário</span>
-              <span className="font-semibold">$425K</span>
+              <span className="text-sm text-muted-foreground">Margem Bruta</span>
+              <span className="font-semibold">
+                {profitabilityData ? `${profitabilityData.grossMargin.toFixed(1)}%` : 'N/A'}
+              </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">ROI</span>
-              <span className="font-semibold text-success">32.5%</span>
+              <span className="text-sm text-muted-foreground">Margem Operacional</span>
+              <span className={`font-semibold ${profitabilityData && profitabilityData.operatingMargin >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {profitabilityData ? `${profitabilityData.operatingMargin.toFixed(1)}%` : 'N/A'}
+              </span>
             </div>
           </CardContent>
         </Card>

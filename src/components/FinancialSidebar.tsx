@@ -1,5 +1,6 @@
 import { useLocation, NavLink } from "react-router-dom";
 import { LayoutDashboard, TrendingUp, Receipt, CircleDollarSign, FileText, Activity, CreditCard } from "@/components/icons";
+import { Users } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 
 const mainNavItems = [{
@@ -26,6 +27,10 @@ const mainNavItems = [{
   title: "Recebimentos e Pagamentos",
   url: "/receivables",
   icon: CreditCard
+}, {
+  title: "Clientes",
+  url: "/customers",
+  icon: Users
 }, {
   title: "Relatórios e Exportação",
   url: "/reports",

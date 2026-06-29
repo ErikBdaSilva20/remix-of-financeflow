@@ -119,10 +119,9 @@ export function DashboardLayout() {
                 variant="outline"
                 onClick={handleSignOut}
                 className="gap-2"
-                title={user?.email}
               >
                 <LogOut className="w-4 h-4" />
-                {user?.name ?? user?.email ?? 'Sair'}
+                {user?.name ?? 'Usuário'}
               </Button>
             </div>
           </header>

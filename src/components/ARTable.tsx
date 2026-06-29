@@ -2,6 +2,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ARTableProps {
@@ -21,15 +28,20 @@ interface ARTableProps {
   page?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
+  onStatusChange?: (invoiceId: string, newStatus: string) => void;
 }
 
-export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPageChange }: ARTableProps) {
+export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPageChange, onStatusChange }: ARTableProps) {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "success" | "outline"> = {
       Open: "default",
       Partial: "secondary",
       Paid: "success",
       Overdue: "destructive",
+      PrepaidPending: "secondary",
+      Scheduled: "outline",
+      Draft: "outline",
+      Cancelled: "secondary",
     };
     return variants[status] || "default";
   };
@@ -39,6 +51,10 @@ export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPage
     Partial: "Parcial",
     Paid: "Pago",
     Overdue: "Atrasado",
+    PrepaidPending: "Pago Adiantado",
+    Scheduled: "Marcado a Pagar",
+    Draft: "Rascunho",
+    Cancelled: "Cancelado",
   };
 
   const getAgingBadge = (bucket: string) => {
@@ -66,7 +82,27 @@ export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPage
           <div key={invoice.id} className="p-4 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold text-sm">{invoice.invoiceNumber}</span>
-              <Badge variant={getStatusBadge(invoice.status)} className="text-xs">{statusLabelsPt[invoice.status] || invoice.status}</Badge>
+              {onStatusChange ? (
+                <Select
+                  value={invoice.status}
+                  onValueChange={(newStatus) => onStatusChange(invoice.id, newStatus)}
+                >
+                  <SelectTrigger className="h-6 w-[140px] text-xs border-none shadow-none p-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Draft">Rascunho</SelectItem>
+                    <SelectItem value="Open">Aberta</SelectItem>
+                    <SelectItem value="Paid">Paga</SelectItem>
+                    <SelectItem value="PrepaidPending">Pago Adiantado</SelectItem>
+                    <SelectItem value="Scheduled">Marcado a Pagar</SelectItem>
+                    <SelectItem value="Overdue">Atrasada</SelectItem>
+                    <SelectItem value="Cancelled">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant={getStatusBadge(invoice.status)} className="text-xs">{statusLabelsPt[invoice.status] || invoice.status}</Badge>
+              )}
             </div>
             <div className="text-sm font-medium truncate">{invoice.customer}</div>
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -107,7 +143,27 @@ export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPage
                 <TableCell>{new Date(invoice.issueDate).toLocaleDateString()}</TableCell>
                 <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  <Badge variant={getStatusBadge(invoice.status)}>{statusLabelsPt[invoice.status] || invoice.status}</Badge>
+                  {onStatusChange ? (
+                    <Select
+                      value={invoice.status}
+                      onValueChange={(newStatus) => onStatusChange(invoice.id, newStatus)}
+                    >
+                      <SelectTrigger className="h-7 w-[150px] text-xs border-none shadow-none">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Draft">Rascunho</SelectItem>
+                        <SelectItem value="Open">Aberta</SelectItem>
+                        <SelectItem value="Paid">Paga</SelectItem>
+                        <SelectItem value="PrepaidPending">Pago Adiantado</SelectItem>
+                        <SelectItem value="Scheduled">Marcado a Pagar</SelectItem>
+                        <SelectItem value="Overdue">Atrasada</SelectItem>
+                        <SelectItem value="Cancelled">Cancelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant={getStatusBadge(invoice.status)}>{statusLabelsPt[invoice.status] || invoice.status}</Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={getAgingBadge(invoice.agingBucket)}>

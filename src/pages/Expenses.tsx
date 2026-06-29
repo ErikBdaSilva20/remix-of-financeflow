@@ -1,5 +1,6 @@
 import { DonutChart } from '@/components/DonutChart';
 import { ExpenseDrillDownTable } from '@/components/ExpenseDrillDownTable';
+import { ExpenseDialog } from '@/components/ExpenseDialog';
 import { FilterHeader, FilterState } from '@/components/FilterHeader';
 import { MetricCard } from '@/components/MetricCard';
 import {
@@ -22,7 +23,7 @@ import {
   useFinancialMetrics,
   useVendors,
 } from '@/hooks/useFinancialData';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useState } from 'react';
 import {
   Bar,
@@ -42,6 +43,7 @@ const Expenses = () => {
     dateRange: {},
     currency: 'BRL',
   });
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [vendorPage, setVendorPage] = useState(1);
   const vendorsPerPage = 5;
   const { data: metrics, isLoading: metricsLoading } = useFinancialMetrics(filters.dateRange);
@@ -134,6 +136,10 @@ const Expenses = () => {
             <h1 className="text-3xl text-foreground">Gestão de Despesas</h1>
             <p className="text-muted-foreground">Monitore e controle despesas empresariais</p>
           </div>
+          <Button onClick={() => setExpenseDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Despesa
+          </Button>
         </div>
 
         {/* Expense Metrics */}
@@ -468,6 +474,8 @@ const Expenses = () => {
           )}
         </Card>
       </div>
+
+      <ExpenseDialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen} />
     </div>
   );
 };
