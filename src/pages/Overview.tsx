@@ -1,28 +1,23 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
+import { EntryDialog } from '@/components/EntryDialog';
 import { RevenueDrillDownTable } from '@/components/RevenueDrillDownTable';
 import { RevenueProfitChart } from '@/components/RevenueProfitChart';
 import { TimePeriod, TimePeriodSelector } from '@/components/TimePeriodSelector';
 import { Badge } from '@/components/ui/badge';
-import { useFinancialMetrics, useKPIs } from '@/hooks/useFinancialData';
 import { usePeriodComparison } from '@/hooks/usePeriodComparison';
 import { useRevenueDrillDown } from '@/hooks/useRevenueDrillDown';
 import { useRevenueProfitData } from '@/hooks/useRevenueProfitData';
-import { ArrowDownLeft, ArrowUpRight, DollarSign, Repeat, TrendingUp, Plus } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, DollarSign, Plus, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
-import { InvoiceDialog } from '@/components/InvoiceDialog';
-import { TransactionDialog } from '@/components/TransactionDialog';
-import { ExpenseDialog } from '@/components/ExpenseDialog';
 
 const formatBRL = (amount: number) =>
   `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Overview() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
-  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
-  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
-  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [entryDialogOpen, setEntryDialogOpen] = useState(false);
 
   // Drill-down state for Revenue/Profit chart
   const [drillDownParams, setDrillDownParams] = useState<{
@@ -32,21 +27,9 @@ export default function Overview() {
 
   const { data: drillDownData, isLoading: drillDownLoading } = useRevenueDrillDown(drillDownParams);
 
-  const { data: metrics } = useFinancialMetrics({});
-  const { data: kpis } = useKPIs();
   const { data: revenueProfitData } = useRevenueProfitData({});
 
   const { data: periodComparison } = usePeriodComparison(selectedPeriod);
-
-  // Helper function to get metric by type
-  const getMetric = (type: string) => {
-    return metrics?.find((m: { metric_type: string }) => m.metric_type === type);
-  };
-
-  // Helper function to get KPI by name
-  const getKPI = (name: string) => {
-    return kpis?.find((k: { kpi_name: string }) => k.kpi_name === name);
-  };
 
   // Handle chart point click for drill-down
   const handleChartPointClick = (dateKey: string) => {
@@ -84,9 +67,6 @@ export default function Overview() {
     const sign = growth >= 0 ? '+' : '';
     return `${sign}${growth.toFixed(1)}%`;
   };
-  const revenue = getMetric('revenue');
-  const profit = getMetric('profit');
-  const cashFlow = getMetric('cash_flow');
   return (
     <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
       {/* Main Content */}
@@ -94,48 +74,24 @@ export default function Overview() {
         {/* Period Selector & Quick Actions */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" className="bg-gradient-primary text-primary-foreground font-semibold" onClick={() => setInvoiceDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Nova Fatura
-            </Button>
-            <Button size="sm" variant="secondary" className="font-semibold" onClick={() => setTransactionDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Registrar Transação
-            </Button>
-            <Button size="sm" variant="outline" className="font-semibold" onClick={() => setExpenseDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Nova Despesa
+            <Button
+              size="sm"
+              className="bg-gradient-primary text-primary-foreground font-semibold"
+              onClick={() => setEntryDialogOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-1" /> Novo Lançamento
             </Button>
           </div>
           <div className="flex justify-end">
-            <TimePeriodSelector selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} />
-          </div>
-        </div>
-
-        {/* Hero Card - Total Financial Assets */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/80 rounded-xl md:rounded-2xl p-6 md:p-8 text-primary-foreground">
-          <div className="relative z-10">
-            <h2 className="text-base md:text-lg mb-2 opacity-90">Total de Ativos Financeiros</h2>
-            <div className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-              {profit || revenue ? (
-                formatBRL((profit?.amount || 0) + (revenue?.amount || 0))
-              ) : (
-                <Badge variant="secondary" className="text-lg px-4 py-2">
-                  Sem Dados
-                </Badge>
-              )}
-            </div>
-          </div>
-          {/* Decorative elements */}
-          <div className="absolute right-4 md:right-8 top-4 md:top-8 opacity-20">
-            <div className="w-12 h-12 md:w-16 md:h-16 bg-background rounded-full flex items-center justify-center">
-              <DollarSign className="w-6 h-6 md:w-8 md:h-8" />
-            </div>
-          </div>
-          <div className="absolute right-8 md:right-16 bottom-4 md:bottom-8 opacity-10">
-            <div className="w-8 h-8 md:w-12 md:h-12 bg-background rounded-full" />
+            <TimePeriodSelector
+              selectedPeriod={selectedPeriod}
+              onPeriodChange={setSelectedPeriod}
+            />
           </div>
         </div>
 
         {/* Key Metrics with Growth Indicators */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {/* Revenue */}
           <Card className="p-4 md:p-6">
             <div className="flex items-start justify-between mb-2">
@@ -210,14 +166,14 @@ export default function Overview() {
             )}
           </Card>
 
-          {/* Profit */}
+          {/* Net Value (Revenue - Expenses) */}
           <Card className="p-4 md:p-6">
             <div className="flex items-start justify-between mb-2">
               <div className="w-8 h-8 md:w-10 md:h-10 bg-primary-light rounded-lg flex items-center justify-center">
                 <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
             </div>
-            <h3 className="text-xs md:text-sm text-muted-foreground mb-1">Lucro</h3>
+            <h3 className="text-xs md:text-sm text-muted-foreground mb-1">Valor Líquido Total</h3>
             <div className="text-xl md:text-2xl font-bold mb-2">
               {periodComparison ? (
                 formatBRL(periodComparison.current.profit)
@@ -244,115 +200,6 @@ export default function Overview() {
                 </span>
               </div>
             )}
-          </Card>
-
-          {/* Cash Flow */}
-          <Card className="p-4 md:p-6">
-            <div className="flex items-start justify-between mb-2">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-secondary-light rounded-lg flex items-center justify-center">
-                <Repeat className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
-              </div>
-            </div>
-            <h3 className="text-xs md:text-sm text-muted-foreground mb-1">Fluxo de Caixa</h3>
-            <div className="text-xl md:text-2xl font-bold mb-2">
-              {periodComparison ? (
-                formatBRL(periodComparison.current.cashFlow)
-              ) : (
-                <Badge variant="secondary" className="text-xs">
-                  Sem Dados
-                </Badge>
-              )}
-            </div>
-            {periodComparison && (
-              <div
-                className={`flex items-center gap-1 text-xs md:text-sm ${
-                  periodComparison.growth.cashFlow >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}
-              >
-                {periodComparison.growth.cashFlow >= 0 ? (
-                  <ArrowUpRight className="w-3 h-3 md:w-4 md:h-4" />
-                ) : (
-                  <ArrowDownLeft className="w-3 h-3 md:w-4 md:h-4" />
-                )}
-                <span className="font-medium">
-                  {formatGrowth(periodComparison.growth.cashFlow)}
-                </span>
-                <span className="text-muted-foreground hidden sm:inline">
-                  vs {periodNamesPt[selectedPeriod]} anterior
-                </span>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        <div className="gap-4 md:gap-6">
-          {/* Account Balances */}
-          <Card className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-3 md:mb-4">
-              <h3 className="text-base md:text-lg">Saldos de Contas</h3>
-            </div>
-            <div className="space-y-3 md:space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <div className="w-7 h-7 md:w-8 md:h-8 bg-primary-light rounded-full flex items-center justify-center">
-                    <div className="w-3 h-3 md:w-4 md:h-4 bg-primary rounded-full" />
-                  </div>
-                  <span className="text-sm md:text-base font-medium">Conta Principal</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm md:text-base font-semibold">
-                    {revenue ? (
-                      formatBRL(revenue.amount)
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        Sem Dados
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">BRL</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <div className="w-7 h-7 md:w-8 md:h-8 bg-secondary-light rounded-full flex items-center justify-center">
-                    <div className="w-3 h-3 md:w-4 md:h-4 bg-secondary rounded-full" />
-                  </div>
-                  <span className="text-sm md:text-base font-medium">Poupança</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm md:text-base font-semibold">
-                    {cashFlow ? (
-                      formatBRL(Math.abs(cashFlow.amount || 0))
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        Sem Dados
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">BRL</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <div className="w-7 h-7 md:w-8 md:h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                    <div className="w-3 h-3 md:w-4 md:h-4 bg-teal-500 rounded-full" />
-                  </div>
-                  <span className="text-sm md:text-base font-medium">Investimento</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm md:text-base font-semibold">
-                    {profit ? (
-                      formatBRL(profit.amount)
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        Sem Dados
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">BRL</div>
-                </div>
-              </div>
-            </div>
           </Card>
         </div>
 
@@ -387,18 +234,7 @@ export default function Overview() {
         </Card>
       </div>
 
-      <InvoiceDialog
-        open={invoiceDialogOpen}
-        onOpenChange={setInvoiceDialogOpen}
-      />
-      <TransactionDialog
-        open={transactionDialogOpen}
-        onOpenChange={setTransactionDialogOpen}
-      />
-      <ExpenseDialog
-        open={expenseDialogOpen}
-        onOpenChange={setExpenseDialogOpen}
-      />
+      <EntryDialog open={entryDialogOpen} onOpenChange={setEntryDialogOpen} />
     </div>
   );
 }
