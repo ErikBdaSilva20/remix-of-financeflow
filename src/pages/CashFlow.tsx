@@ -143,6 +143,7 @@ const CashFlow = () => {
   // Visão focada (padrão): mês atual + mês anterior, sem precisar montar/exibir o ano inteiro
   const focusedCards = (() => {
     if (year !== actualCurrentYear) return [];
+    if (months.length === 0) return []; // query ainda não resolveu
     const current = buildMonthCard(actualCurrentMonthIndex);
     if (actualCurrentMonthIndex > 0) {
       return [buildMonthCard(actualCurrentMonthIndex - 1), current];
@@ -284,6 +285,12 @@ const CashFlow = () => {
               })}
             </div>
           )
+        ) : focusedCards.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <span className="inline-flex items-center justify-center rounded-md bg-muted px-3 py-1 text-sm text-muted-foreground">
+              Carregando...
+            </span>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             {focusedCards.map((card) => (
