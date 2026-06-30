@@ -1,8 +1,11 @@
-import { APTable } from '@/components/APTable';
+import { APTable, type APBillDetail } from '@/components/APTable';
 import { ARTable, type ARInvoice } from '@/components/ARTable';
 import { DonutChart } from '@/components/DonutChart';
 import { InvoiceDialog } from '@/components/InvoiceDialog';
 import { PaymentDialog } from '@/components/PaymentDialog';
+import { VendorDialog } from '@/components/VendorDialog';
+import { BillDialog } from '@/components/BillDialog';
+import { BillPaymentDialog } from '@/components/BillPaymentDialog';
 import { MetricCard } from '@/components/MetricCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,7 +41,11 @@ const Receivables = () => {
   const { toast } = useToast();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
+  const [billDialogOpen, setBillDialogOpen] = useState(false);
+  const [billPaymentDialogOpen, setBillPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ARInvoice | null>(null);
+  const [selectedBill, setSelectedBill] = useState<APBillDetail | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [arSortBy, setArSortBy] = useState('due_date_asc');
   const [apSortBy, setApSortBy] = useState('due_date_asc');
@@ -374,7 +381,15 @@ const Receivables = () => {
       {/* Accounts Payable Table */}
       <div className="space-y-2">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 px-1">
-          <h3 className="text-lg">Contas de Fornecedores Abertas</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg">Contas de Fornecedores Abertas</h3>
+            <Button variant="outline" size="sm" onClick={() => setVendorDialogOpen(true)}>
+              + Fornecedor
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setBillDialogOpen(true)}>
+              + Fatura
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground shrink-0">Ordenar:</span>
             <Select value={apSortBy} onValueChange={setApSortBy}>
@@ -402,7 +417,14 @@ const Receivables = () => {
             </div>
           </Card>
         ) : (
-          <APTable data={apDetailedData || []} formatCurrency={formatBRL} />
+          <APTable 
+            data={apDetailedData || []} 
+            formatCurrency={formatBRL} 
+            onPayBill={(bill) => {
+              setSelectedBill(bill);
+              setBillPaymentDialogOpen(true);
+            }}
+          />
         )}
       </div>
 
@@ -485,6 +507,13 @@ const Receivables = () => {
         open={paymentDialogOpen}
         onOpenChange={setPaymentDialogOpen}
         invoice={selectedInvoice}
+      />
+      <VendorDialog open={vendorDialogOpen} onOpenChange={setVendorDialogOpen} />
+      <BillDialog open={billDialogOpen} onOpenChange={setBillDialogOpen} />
+      <BillPaymentDialog
+        open={billPaymentDialogOpen}
+        onOpenChange={setBillPaymentDialogOpen}
+        bill={selectedBill}
       />
     </div>
   );
