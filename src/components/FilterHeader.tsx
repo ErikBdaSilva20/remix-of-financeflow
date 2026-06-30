@@ -47,8 +47,6 @@ const fallbackSegments = {
   regions: ['América do Norte', 'Europa', 'Ásia-Pacífico', 'América Latina', 'Oriente Médio']
 };
 
-const currencies = ['USD', 'BRL', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
-
 export const FilterHeader: React.FC<FilterHeaderProps> = ({
   filters,
   onFiltersChange,
@@ -110,7 +108,6 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
     if (filters.department) count++;
     if (filters.product) count++;
     if (filters.region) count++;
-    if (filters.currency && showFxCurrency) count++; // Always count currency when FX is shown
     return count;
   };
 
@@ -256,20 +253,6 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
             </SelectContent>
           </Select>
 
-          {/* Currency Filter */}
-          {showFxCurrency && (
-            <Select value={filters.currency || 'USD'} onValueChange={(value) => updateFilter('currency', value)}>
-              <SelectTrigger className="w-[100px] bg-background">
-                <SelectValue placeholder="Moeda" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border shadow-lg z-50">
-                {currencies.map((currency) => (
-                  <SelectItem key={currency} value={currency}>{currency}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
           {/* Reset Button */}
           {getActiveFiltersCount() > 0 && (
             <Button
@@ -349,17 +332,6 @@ export const FilterHeader: React.FC<FilterHeaderProps> = ({
               </Badge>
             )}
 
-            {filters.currency && showFxCurrency && (
-              <Badge variant="secondary" className="gap-1">
-                Moeda: {filters.currency}
-                <button
-                  onClick={() => removeFilter('currency')}
-                  className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            )}
           </div>
         )}
       </div>
