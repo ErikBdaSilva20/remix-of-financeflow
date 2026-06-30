@@ -31,30 +31,14 @@ create index if not exists idx_fx_rates_currency_date on fx_rates(currency, date
 -- BUSINESS TABLES — owner_id obrigatório em todas
 -- ────────────────────────────────────────────────────────────
 
--- Contas financeiras (conta corrente, poupança, cartão…)
-create table if not exists accounts (
-  id          uuid primary key default gen_random_uuid(),
-  owner_id    text not null references "user"(id) on delete cascade,
-  name        text not null,
-  type        text not null default 'checking',  -- checking | savings | credit | investment
-  currency    text not null default 'USD',
-  balance     numeric(18,2) not null default 0,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-create index if not exists idx_accounts_owner on accounts(owner_id);
-create or replace trigger trg_accounts_updated_at
-  before update on accounts for each row execute function touch_updated_at();
-
 -- Transações bancárias
 create table if not exists bank_transactions (
   id                  uuid primary key default gen_random_uuid(),
   owner_id            text not null references "user"(id) on delete cascade,
-  account_id          uuid references accounts(id) on delete set null,
   date                date not null,
-  amount              numeric(18,2) not null,           -- em base currency (USD)
+  amount              numeric(18,2) not null,           -- em base currency (BRL)
   original_amount     numeric(18,2),
-  original_currency   text not null default 'USD',
+  original_currency   text not null default 'BRL',
   type                text not null default 'out',      -- in | out | transfer
   counterparty        text,
   category            text,
@@ -114,7 +98,7 @@ create table if not exists invoices (
   amount_total        numeric(18,2) not null,           -- em base currency
   open_amount         numeric(18,2) not null,           -- saldo em aberto (base)
   original_amount     numeric(18,2),
-  original_currency   text not null default 'USD',
+  original_currency   text not null default 'BRL',
   status              text not null default 'Open',     -- Open|Partial|Overdue|Partially Paid|Paid|Void
   channel             text,                             -- canal de venda (ex: Direct, Online)
   product_id          text,                             -- produto/serviço referenciado
@@ -135,7 +119,7 @@ create table if not exists payments (
   date                date not null,
   amount              numeric(18,2) not null,           -- em base currency
   original_amount     numeric(18,2),
-  original_currency   text not null default 'USD',
+  original_currency   text not null default 'BRL',
   status              text not null default 'Received', -- Received|Pending|Failed|Refunded
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
@@ -153,7 +137,7 @@ create table if not exists expenses_new (
   date                date not null,
   amount              numeric(18,2) not null,           -- em base currency
   original_amount     numeric(18,2),
-  original_currency   text not null default 'USD',
+  original_currency   text not null default 'BRL',
   category            text not null,                   -- cogs | marketing | payroll | office | software | etc.
   vendor              text,
   description         text,
@@ -169,17 +153,34 @@ create index if not exists idx_expenses_new_date  on expenses_new(date desc);
 create or replace trigger trg_expenses_new_updated_at
   before update on expenses_new for each row execute function touch_updated_at();
 
+-- Fornecedores (Vendors)
+create table if not exists vendors (
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    text not null references "user"(id) on delete cascade,
+  name        text not null,
+  email       text,
+  phone       text,
+  category    text,
+  notes       text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists idx_vendors_owner on vendors(owner_id);
+create or replace trigger trg_vendors_updated_at
+  before update on vendors for each row execute function touch_updated_at();
+
 -- Contas a Pagar (notas de fornecedor)
 create table if not exists vendor_bills (
   id                  uuid primary key default gen_random_uuid(),
   owner_id            text not null references "user"(id) on delete cascade,
+  vendor_id           uuid references vendors(id) on delete set null,
   vendor_name         text not null,
   issue_date          date not null,
   due_date            date not null,
   amount_total        numeric(18,2) not null,
   open_amount         numeric(18,2) not null,
   original_amount     numeric(18,2),
-  original_currency   text not null default 'USD',
+  original_currency   text not null default 'BRL',
   status              text not null default 'Open',     -- Open|Pending|Overdue|Partial|Partially Paid|Paid|Void
   category            text,
   created_at          timestamptz not null default now(),
@@ -210,7 +211,7 @@ create table if not exists accounting_settings (
   id                  uuid primary key default gen_random_uuid(),
   owner_id            text not null references "user"(id) on delete cascade,
   basis               text not null default 'accrual',  -- accrual | cash
-  base_currency       text not null default 'USD',
+  base_currency       text not null default 'BRL',
   timezone            text not null default 'UTC',
   allow_future_dates  boolean not null default false,
   created_at          timestamptz not null default now(),

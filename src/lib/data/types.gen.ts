@@ -22,26 +22,10 @@ export interface Database {
       };
 
       // ── Business Tables (owner_id obrigatório) ─────────────────────────────
-      accounts: {
-        Row: {
-          id: string;
-          owner_id: string;
-          name: string;
-          type: string;
-          currency: string;
-          balance: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['accounts']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<Database['public']['Tables']['accounts']['Insert']>;
-      };
-
       bank_transactions: {
         Row: {
           id: string;
           owner_id: string;
-          account_id: string | null;
           date: string;
           amount: number;
           original_amount: number | null;
@@ -158,6 +142,7 @@ export interface Database {
         Row: {
           id: string;
           owner_id: string;
+          vendor_id: string | null;
           vendor_name: string;
           issue_date: string;
           due_date: string;
@@ -172,6 +157,22 @@ export interface Database {
         };
         Insert: Omit<Database['public']['Tables']['vendor_bills']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Database['public']['Tables']['vendor_bills']['Insert']>;
+      };
+
+      vendors: {
+        Row: {
+          id: string;
+          owner_id: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+          category: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['vendors']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Database['public']['Tables']['vendors']['Insert']>;
       };
 
       filter_segments: {

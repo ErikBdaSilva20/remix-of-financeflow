@@ -63,28 +63,13 @@ create index if not exists idx_fx_rates_currency_date on fx_rates(currency, date
 
 -- ── BUSINESS TABLES — owner_id obrigatório em todas ──────────────────────────
 
-create table if not exists accounts (
-  id         uuid primary key default gen_random_uuid(),
-  owner_id   text not null references "user"(id) on delete cascade,
-  name       text not null,
-  type       text not null default 'checking',
-  currency   text not null default 'USD',
-  balance    numeric(18,2) not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-create index if not exists idx_accounts_owner on accounts(owner_id);
-create or replace trigger trg_accounts_updated_at
-  before update on accounts for each row execute function touch_updated_at();
-
 create table if not exists bank_transactions (
   id                uuid primary key default gen_random_uuid(),
   owner_id          text not null references "user"(id) on delete cascade,
-  account_id        uuid references accounts(id) on delete set null,
   date              date not null,
   amount            numeric(18,2) not null,
   original_amount   numeric(18,2),
-  original_currency text not null default 'USD',
+  original_currency text not null default 'BRL',
   type              text not null default 'out',
   counterparty      text,
   category          text,
@@ -139,7 +124,7 @@ create table if not exists invoices (
   amount_total      numeric(18,2) not null,
   open_amount       numeric(18,2) not null,
   original_amount   numeric(18,2),
-  original_currency text not null default 'USD',
+  original_currency text not null default 'BRL',
   status            text not null default 'Open',
   channel           text,
   product_id        text,
@@ -159,7 +144,7 @@ create table if not exists payments (
   date              date not null,
   amount            numeric(18,2) not null,
   original_amount   numeric(18,2),
-  original_currency text not null default 'USD',
+  original_currency text not null default 'BRL',
   status            text not null default 'Received',
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
@@ -175,7 +160,7 @@ create table if not exists expenses_new (
   date              date not null,
   amount            numeric(18,2) not null,
   original_amount   numeric(18,2),
-  original_currency text not null default 'USD',
+  original_currency text not null default 'BRL',
   category          text not null,
   vendor            text,
   description       text,
@@ -200,7 +185,7 @@ create table if not exists vendor_bills (
   amount_total      numeric(18,2) not null,
   open_amount       numeric(18,2) not null,
   original_amount   numeric(18,2),
-  original_currency text not null default 'USD',
+  original_currency text not null default 'BRL',
   status            text not null default 'Open',
   category          text,
   created_at        timestamptz not null default now(),
@@ -229,7 +214,7 @@ create table if not exists accounting_settings (
   id                 uuid primary key default gen_random_uuid(),
   owner_id           text not null references "user"(id) on delete cascade,
   basis              text not null default 'accrual',
-  base_currency      text not null default 'USD',
+  base_currency      text not null default 'BRL',
   timezone           text not null default 'UTC',
   allow_future_dates boolean not null default false,
   created_at         timestamptz not null default now(),
@@ -276,3 +261,47 @@ ALTER TABLE invoices
 
 ALTER TABLE invoices
   ALTER COLUMN due_date DROP NOT NULL;
+
+
+-- =============================================================================
+-- PARTE 5 — Tabela de Fornecedores (vendors) e atualização de vendor_bills
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS vendors (
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    text not null references "user"(id) on delete cascade,
+  name        text not null,
+  email       text,
+  phone       text,
+  category    text,
+  notes       text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+CREATE INDEX IF NOT EXISTS idx_vendors_owner ON vendors(owner_id);
+CREATE OR REPLACE TRIGGER trg_vendors_updated_at
+  BEFORE UPDATE ON vendors FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
+ALTER TABLE vendor_bills
+  ADD COLUMN IF NOT EXISTS vendor_id UUID REFERENCES vendors(id) ON DELETE SET NULL;
+
+
+-- =============================================================================
+-- PARTE 6 — Tabela de Orçamentos (budgets)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS budgets (
+  id             uuid primary key default gen_random_uuid(),
+  owner_id       text not null references "user"(id) on delete cascade,
+  category       text not null,
+  period_month   text not null default 'ALL',
+  amount         numeric(18,2) not null,
+  currency       text not null default 'BRL',
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  CONSTRAINT uq_budgets_owner_cat_period UNIQUE (owner_id, category, period_month)
+);
+CREATE INDEX IF NOT EXISTS idx_budgets_owner ON budgets(owner_id);
+CREATE OR REPLACE TRIGGER trg_budgets_updated_at
+  BEFORE UPDATE ON budgets FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
