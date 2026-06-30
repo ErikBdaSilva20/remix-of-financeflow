@@ -28,13 +28,13 @@ export const useCurrencyConversion = (currency: string = 'BRL') => {
   });
 
   const fxRate = (() => {
-    if (currency === 'USD') return { rate_to_base: 1, currency: 'USD' };
+    if (currency === 'BRL') return { rate_to_base: 1, currency: 'BRL' };
     if (!allFxRatesData) return undefined;
     return allFxRatesData.latest[currency] || { rate_to_base: 1, currency };
   })();
 
   const getFxRateForDate = (targetCurrency: string, date: string): number => {
-    if (targetCurrency === 'USD') return 1;
+    if (targetCurrency === 'BRL') return 1;
     if (!allFxRatesData?.byDate[targetCurrency]) return 1;
     const currencyRates = allFxRatesData.byDate[targetCurrency];
     if (currencyRates[date]) return currencyRates[date];
@@ -42,17 +42,17 @@ export const useCurrencyConversion = (currency: string = 'BRL') => {
     return priorDate ? currencyRates[priorDate] : (allFxRatesData.latest[targetCurrency]?.rate_to_base || 1);
   };
 
-  const convertAmount = (amount: number, fromCurrency: string = 'USD', transactionDate?: string): number => {
+  const convertAmount = (amount: number, fromCurrency: string = 'BRL', transactionDate?: string): number => {
     if (!allFxRatesData || !fxRate) return amount;
     if (fromCurrency === currency) return amount;
     let fromRate: number;
     let toRate: number;
     if (transactionDate) {
-      fromRate = fromCurrency === 'USD' ? 1 : getFxRateForDate(fromCurrency, transactionDate);
-      toRate = currency === 'USD' ? 1 : getFxRateForDate(currency, transactionDate);
+      fromRate = fromCurrency === 'BRL' ? 1 : getFxRateForDate(fromCurrency, transactionDate);
+      toRate = currency === 'BRL' ? 1 : getFxRateForDate(currency, transactionDate);
     } else {
-      fromRate = fromCurrency === 'USD' ? 1 : (allFxRatesData.latest[fromCurrency]?.rate_to_base || 1);
-      toRate = currency === 'USD' ? 1 : fxRate.rate_to_base;
+      fromRate = fromCurrency === 'BRL' ? 1 : (allFxRatesData.latest[fromCurrency]?.rate_to_base || 1);
+      toRate = currency === 'BRL' ? 1 : fxRate.rate_to_base;
     }
     return (amount * fromRate) / toRate;
   };

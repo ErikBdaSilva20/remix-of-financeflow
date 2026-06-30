@@ -19,9 +19,10 @@ import Revenue from './pages/Revenue';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Cache stays fresh for 30 min: no refetch when navigating back/forward
-      staleTime: 30 * 60 * 1000,
-      gcTime: 60 * 60 * 1000,
+      // Cache stays fresh for 2 min — long enough to avoid redundant requests on
+      // navigation but short enough that mutations + invalidation always trigger a refetch
+      staleTime: 2 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
       // Não refazer todas as requests só por focar a aba.
       refetchOnWindowFocus: false,
       // Retry inteligente: NÃO re-tentar erros 4xx do gateway (tabela vazia/
