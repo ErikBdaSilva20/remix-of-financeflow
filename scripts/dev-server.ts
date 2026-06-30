@@ -3,7 +3,13 @@ import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
+
+// node-postgres devolve colunas `date` (OID 1082) como objetos Date por padrão.
+// O front-end inteiro trata issue_date/due_date/date como strings "YYYY-MM-DD"
+// (comparações lexicográficas, .slice(0,7), concatenação com 'T00:00:00'), então
+// sem isto os filtros por data quebram silenciosamente para qualquer linha vinda do banco.
+types.setTypeParser(1082, (val) => val);
 
 const scryptAsync = promisify(scrypt);
 
@@ -18,13 +24,13 @@ const sessions = new Map<string, string>();
 
 // ── Tabelas específicas do FinanceFlow ────────────────────────────────────────
 const TABLES_WITH_OWNER = new Set<string>([
-  'accounts',
   'bank_transactions',
   'customers',
   'contacts',
   'invoices',
   'payments',
   'expenses_new',
+  'vendors',
   'vendor_bills',
   'filter_segments',
   'accounting_settings',
@@ -34,7 +40,9 @@ const TABLES_WITH_OWNER = new Set<string>([
 
 const LOOKUP_TABLES = new Set<string>(['fx_rates']);
 
-const ALL_TABLES = new Set<string>([...TABLES_WITH_OWNER, ...LOOKUP_TABLES]);
+const ALL_TABLES = new Set<string>();
+TABLES_WITH_OWNER.forEach((t) => ALL_TABLES.add(t));
+LOOKUP_TABLES.forEach((t) => ALL_TABLES.add(t));
 
 // Valores hardcoded — não vêm do usuário, portanto seguros como ORDER BY
 const LOOKUP_ORDER: Record<string, string> = {};
@@ -122,7 +130,12 @@ app.post('/auth/sign-up', async (c) => {
     const user = r.rows[0];
     const token = crypto.randomUUID();
     sessions.set(token, user.id);
-    setCookie(c, 'session', token, { httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 7 });
+    setCookie(c, 'session', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+      maxAge: 60 * 60 * 24 * 7,
+    });
     return c.json({ id: user.id, name: user.name, email: user.email, role: 'admin' });
   } catch (e: any) {
     // 23505 = unique_violation (email já cadastrado) — único erro seguro de expor
@@ -163,7 +176,12 @@ app.post('/auth/sign-in', async (c) => {
 
     const token = crypto.randomUUID();
     sessions.set(token, user.id);
-    setCookie(c, 'session', token, { httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 * 7 });
+    setCookie(c, 'session', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+      maxAge: 60 * 60 * 24 * 7,
+    });
     return c.json({ id: user.id, name: user.name, email: user.email, role: 'admin' });
   } catch {
     return c.json({ error: 'Erro ao autenticar' }, 500);
@@ -197,9 +215,17 @@ app.get('/data/:table', async (c) => {
   if (!assertTable(table)) return c.json({ error: 'Recurso não encontrado' }, 404);
 
   try {
+    if (TABLES_WITH_OWNER.has(table)) {
+      const ownerId = await resolveOwner(c);
+      if (!ownerId) return c.json({ error: 'Não autorizado' }, 401);
+      const r = await pool.query(
+        `SELECT * FROM ${table} WHERE owner_id = $1 ORDER BY created_at DESC`,
+        [ownerId]
+      );
+      return c.json(r.rows);
+    }
     let order = '';
-    if (TABLES_WITH_OWNER.has(table)) order = 'ORDER BY created_at DESC';
-    else if (LOOKUP_ORDER[table]) order = `ORDER BY ${LOOKUP_ORDER[table]} ASC`;
+    if (LOOKUP_ORDER[table]) order = `ORDER BY ${LOOKUP_ORDER[table]} ASC`;
     const r = await pool.query(`SELECT * FROM ${table} ${order}`);
     return c.json(r.rows);
   } catch {
@@ -222,6 +248,14 @@ app.post('/data/:table', async (c) => {
     body.owner_id = ownerId;
   }
 
+  // Remove campos com valor undefined ou string vazia que são null no schema
+  // (evita erro de tipo UUID no Postgres quando o front envia "" em vez de null)
+  for (const key of Object.keys(body)) {
+    if (body[key] === undefined || body[key] === '') {
+      body[key] = null;
+    }
+  }
+
   const cols = Object.keys(body);
   if (!assertColumns(cols)) return c.json({ error: 'Campos inválidos' }, 400);
 
@@ -233,7 +267,8 @@ app.post('/data/:table', async (c) => {
       vals
     );
     return c.json(r.rows[0]);
-  } catch {
+  } catch (e: unknown) {
+    console.error(`[POST /${table}] SQL error:`, e instanceof Error ? e.message : e);
     return c.json({ error: 'Erro ao criar registro' }, 500);
   }
 });
@@ -278,7 +313,8 @@ app.patch('/data/:table/:id', async (c) => {
     );
     if (!r.rows.length) return c.json({ error: 'Não encontrado' }, 404);
     return c.json(r.rows[0]);
-  } catch {
+  } catch (e: unknown) {
+    console.error(`[PATCH /${table}/${id}] SQL error:`, e instanceof Error ? e.message : e);
     return c.json({ error: 'Erro ao atualizar registro' }, 500);
   }
 });
