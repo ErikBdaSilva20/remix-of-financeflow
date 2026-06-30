@@ -3,6 +3,7 @@ import { format, subMonths, subQuarters, subYears, startOfMonth, endOfMonth, sta
 import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
+import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
 
 export type TimePeriod = 'month' | 'quarter' | 'year';
 
@@ -29,7 +30,7 @@ export function usePeriodComparison(period: TimePeriod) {
         fetchTable<ExpenseNew>('expenses_new'),
       ]);
 
-      const sumInv = (s: string, e: string) => invoices.filter(i => i.issue_date >= s && i.issue_date <= e).reduce((a, i) => a + Number(i.amount_total || 0), 0);
+      const sumInv = (s: string, e: string) => invoices.filter(i => i.issue_date >= s && i.issue_date <= e && isRealizedInvoice(i)).reduce((a, i) => a + Number(i.amount_total || 0), 0);
       const sumExp = (s: string, e: string) => expenses.filter(x => x.date >= s && x.date <= e).reduce((a, x) => a + Number(x.amount || 0), 0);
 
       const cR = sumInv(fd(cS), fd(cE)); const cX = sumExp(fd(cS), fd(cE)); const cP = cR - cX;

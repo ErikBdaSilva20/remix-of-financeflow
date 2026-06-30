@@ -6,6 +6,7 @@ import type { FxRate } from "@/lib/data/fx_rates.repo";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
 
 export interface ProfitabilityMetrics {
   totalRevenue: number;
@@ -50,7 +51,7 @@ export interface MarginTrendTimeSeries {
 export function useProfitabilityData(filters?: { dateRange?: { from?: Date; to?: Date }, project?: string, department?: string, product?: string, region?: string, currency?: string }) {
   const { data: settings } = useAccountingSettings();
   const basis = settings?.basis || 'accrual';
-  const currency = filters?.currency || 'USD';
+  const currency = filters?.currency || 'BRL';
   const { data: revenueSources } = useRevenueSources(filters?.dateRange, currency);
   const { data: expenseCategories } = useExpenseCategories(filters?.dateRange, currency);
   const { data: financialMetrics } = useFinancialMetrics(filters?.dateRange);
@@ -199,7 +200,7 @@ export function formatChange(change: number): string {
 // Hook for margin trends time series with dynamic granularity
 export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date; to?: Date }, product?: string, region?: string, currency?: string }) {
   const dateRange = filters?.dateRange;
-  const currency = filters?.currency || 'USD';
+  const currency = filters?.currency || 'BRL';
 
   return useQuery({
     queryKey: ["margin-trends-timeseries", filters],
@@ -224,7 +225,7 @@ export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date;
       });
 
       const getFxRate = (targetCurrency: string, date: string): number => {
-        if (targetCurrency === 'USD') return 1;
+        if (targetCurrency === 'BRL') return 1;
         if (!fxMap[targetCurrency]) return 1;
         if (fxMap[targetCurrency][date]) return fxMap[targetCurrency][date];
         const sorted = Object.keys(fxMap[targetCurrency]).sort().reverse();
@@ -234,13 +235,14 @@ export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date;
 
       const convertAmount = (amount: number, fromCurrency: string, date: string): number => {
         if (fromCurrency === currency) return amount;
-        const fromRate = fromCurrency === 'USD' ? 1 : getFxRate(fromCurrency, date);
-        const toRate = currency === 'USD' ? 1 : getFxRate(currency, date);
+        const fromRate = fromCurrency === 'BRL' ? 1 : getFxRate(fromCurrency, date);
+        const toRate = currency === 'BRL' ? 1 : getFxRate(currency, date);
         return (amount * fromRate) / toRate;
       };
 
       // Filter invoices by date range and optional product (region not in invoices schema)
       const revenueData = allInvoices.filter(inv => {
+        if (!isRealizedInvoice(inv)) return false;
         if (inv.issue_date < startStr || inv.issue_date > endStr) return false;
         if (filters?.product && inv.product_id !== filters.product) return false;
         return true;
@@ -263,7 +265,7 @@ export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date;
         const key = useDailyGranularity ? format(dateObj, "MMM dd") : format(dateObj, "MMM yyyy");
         const dateKey = useDailyGranularity ? format(dateObj, "yyyy-MM-dd") : format(dateObj, "yyyy-MM");
         if (!revenueByPeriod[key]) revenueByPeriod[key] = { period: key, dateKey, revenue: 0 };
-        revenueByPeriod[key].revenue += convertAmount(Number(row.amount_total || 0), 'USD', row.issue_date);
+        revenueByPeriod[key].revenue += convertAmount(Number(row.amount_total || 0), 'BRL', row.issue_date);
       });
 
       const expensesByPeriod: Record<string, { cogs: number; opex: number }> = {};
@@ -272,7 +274,7 @@ export function useMarginTrendsTimeSeries(filters?: { dateRange?: { from?: Date;
         const key = useDailyGranularity ? format(dateObj, "MMM dd") : format(dateObj, "MMM yyyy");
         if (!expensesByPeriod[key]) expensesByPeriod[key] = { cogs: 0, opex: 0 };
         const category = (row.category || '').toLowerCase();
-        const converted = convertAmount(Number(row.amount || 0), 'USD', row.date);
+        const converted = convertAmount(Number(row.amount || 0), 'BRL', row.date);
         if (category.includes('cogs') || category.includes('cost of goods')) {
           expensesByPeriod[key].cogs += converted;
         } else {

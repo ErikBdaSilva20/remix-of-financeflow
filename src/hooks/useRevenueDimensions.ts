@@ -2,6 +2,7 @@ import type { Invoice } from '@/lib/data/invoices.repo';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fetchTable } from './infra/tableCache';
+import { isRealizedInvoice } from '@/lib/finance/invoiceStatus';
 
 interface DimensionData {
   dimension: string;
@@ -24,6 +25,7 @@ export function useRevenueDimensions(dateRange?: { from?: Date; to?: Date }) {
       const fromStr = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
       const toStr = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
       const filtered = invoices.filter((i) => {
+        if (!isRealizedInvoice(i)) return false;
         if (fromStr && i.issue_date < fromStr) return false;
         if (toStr && i.issue_date > toStr) return false;
         return true;
@@ -84,6 +86,7 @@ export function useRevenueByProductTrends(dateRange?: { from?: Date; to?: Date }
       const fromStr = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
       const toStr = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
       const filtered = invoices.filter((i) => {
+        if (!isRealizedInvoice(i)) return false;
         if (fromStr && i.issue_date < fromStr) return false;
         if (toStr && i.issue_date > toStr) return false;
         return true;

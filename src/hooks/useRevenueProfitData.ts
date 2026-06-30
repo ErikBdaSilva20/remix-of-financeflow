@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
+import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
 
 export interface RevenueProfitData {
   period: string;
@@ -24,6 +25,7 @@ export function useRevenueProfitData(dateRange?: { from?: Date; to?: Date }) {
       const toStr = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
 
       const filteredInv = invoices.filter(i => {
+        if (!isRealizedInvoice(i)) return false;
         if (fromStr && i.issue_date < fromStr) return false;
         if (toStr && i.issue_date > toStr) return false;
         return true;

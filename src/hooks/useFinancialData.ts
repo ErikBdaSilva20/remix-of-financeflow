@@ -8,6 +8,7 @@ import type { Payment } from "@/lib/data/payments.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 import type { VendorBill } from "@/lib/data/vendor_bills.repo";
 import { useAccountingSettings } from "./useAccountingSettings";
+import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
 
 export interface FinancialMetric {
   id: string;
@@ -100,7 +101,7 @@ export function useFinancialMetrics(dateRange?: { from?: Date; to?: Date }) {
       const today = new Date();
       const dr = dateRange ?? { from: startOfMonth(subMonths(today, 12)), to: endOfMonth(today) };
       const invoices = await fetchTable<Invoice>('invoices');
-      const filtered = filterByDateRange(invoices, 'issue_date', dr);
+      const filtered = filterByDateRange(invoices, 'issue_date', dr).filter(isRealizedInvoice);
 
       const monthlyTotals: Record<string, number> = {};
       filtered.forEach(inv => {
@@ -133,7 +134,7 @@ export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _curre
     queryKey: ["revenue-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
       const invoices = await fetchTable<Invoice>('invoices');
-      const filtered = filterByDateRange(invoices, 'issue_date', dateRange);
+      const filtered = filterByDateRange(invoices, 'issue_date', dateRange).filter(isRealizedInvoice);
 
       const grouped: Record<string, number> = {};
       filtered.forEach(inv => {
@@ -158,9 +159,10 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
   return useQuery({
     queryKey: ["expense-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
+      // Fetch expenses (required) and budgets (optional — table may not exist yet)
       const [expenses, budgets] = await Promise.all([
         fetchTable<ExpenseNew>('expenses_new'),
-        fetchTable<Budget>('budgets'),
+        fetchTable<Budget>('budgets').catch(() => [] as Budget[]),
       ]);
       const filtered = filterByDateRange(expenses, 'date', dateRange);
 
@@ -169,7 +171,6 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
       budgets.forEach(b => {
         const key = b.category;
         if (!grouped[key]) grouped[key] = { amount: 0, budget: 0 };
-        // If we want monthly budgets, we'd scale by month. We'll just take the amount for now.
         grouped[key].budget += Number(b.amount || 0);
       });
 
@@ -230,7 +231,7 @@ export function useRevenueTrends(dateRange?: { from?: Date; to?: Date }) {
         fetchTable<Invoice>('invoices'),
         fetchTable<Payment>('payments'),
       ]);
-      const filteredInv = filterByDateRange(invoices, 'issue_date', dateRange);
+      const filteredInv = filterByDateRange(invoices, 'issue_date', dateRange).filter(isRealizedInvoice);
       const filteredPmt = filterByDateRange(payments, 'date', dateRange);
 
       // Ensure we always have a timeline even if there's no data
@@ -289,7 +290,7 @@ export function useTopClients() {
       ]);
       const customerMap = new Map(customers.map(c => [c.id, c.name]));
       const grouped: Record<string, number> = {};
-      invoices.forEach(inv => {
+      invoices.filter(isRealizedInvoice).forEach(inv => {
         if (inv.customer_id) grouped[inv.customer_id] = (grouped[inv.customer_id] || 0) + Number(inv.amount_total || 0);
       });
       return Object.entries(grouped)
