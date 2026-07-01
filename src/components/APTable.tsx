@@ -1,24 +1,28 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
-interface APTableProps {
-  data: Array<{
-    id: string;
-    billNumber: string;
-    vendor: string;
-    issueDate: string;
-    dueDate: string;
-    status: string;
-    amount: number;
-    currency: string;
-    daysUntilDue: number;
-    category: string | null;
-  }>;
-  formatCurrency: (amount: number, currency: string, transactionDate?: string) => string;
+export interface APBillDetail {
+  id: string;
+  billNumber: string;
+  vendor: string;
+  issueDate: string;
+  dueDate: string;
+  status: string;
+  amount: number;
+  currency: string;
+  daysUntilDue: number;
+  category: string | null;
 }
 
-export function APTable({ data, formatCurrency }: APTableProps) {
+interface APTableProps {
+  data: APBillDetail[];
+  formatCurrency: (amount: number, currency: string, transactionDate?: string) => string;
+  onPayBill?: (bill: APBillDetail) => void;
+}
+
+export function APTable({ data, formatCurrency, onPayBill }: APTableProps) {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "success" | "outline"> = {
       Open: "default",
@@ -73,6 +77,13 @@ export function APTable({ data, formatCurrency }: APTableProps) {
                 <Badge variant={getStatusBadge(bill.status)} className="text-xs">{statusLabelsPt[bill.status] || bill.status}</Badge>
                 <span className="font-bold text-sm">{formatCurrency(bill.amount, bill.currency, bill.issueDate)}</span>
               </div>
+              {onPayBill && (bill.status === "Open" || bill.status === "Partial" || bill.status === "Overdue") && (
+                <div className="pt-2">
+                  <Button size="sm" className="w-full" onClick={() => onPayBill(bill)}>
+                    Pagar
+                  </Button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -92,6 +103,7 @@ export function APTable({ data, formatCurrency }: APTableProps) {
               <TableHead>Urgência</TableHead>
               <TableHead className="text-right">Dias Até Vencer</TableHead>
               <TableHead className="text-right">Valor</TableHead>
+              <TableHead className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -115,6 +127,13 @@ export function APTable({ data, formatCurrency }: APTableProps) {
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(bill.amount, bill.currency, bill.issueDate)}
+                  </TableCell>
+                  <TableCell>
+                    {onPayBill && (bill.status === "Open" || bill.status === "Partial" || bill.status === "Overdue") && (
+                      <Button size="sm" variant="default" onClick={() => onPayBill(bill)}>
+                        Pagar
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               );

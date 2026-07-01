@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
-import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
-import type { Payment } from "@/lib/data/payments.repo";
+import type { Transaction } from "@/lib/data/transactions.repo";
+import type { Budget } from "@/lib/data/budgets.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 import type { VendorBill } from "@/lib/data/vendor_bills.repo";
 import { useAccountingSettings } from "./useAccountingSettings";
+import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
 
 export interface FinancialMetric {
   id: string;
@@ -99,12 +100,12 @@ export function useFinancialMetrics(dateRange?: { from?: Date; to?: Date }) {
       const today = new Date();
       const dr = dateRange ?? { from: startOfMonth(subMonths(today, 12)), to: endOfMonth(today) };
       const invoices = await fetchTable<Invoice>('invoices');
-      const filtered = filterByDateRange(invoices, 'issue_date', dr);
+      const filtered = filterByDateRange(invoices, 'issue_date', dr).filter(isRealizedInvoice);
 
       const monthlyTotals: Record<string, number> = {};
       filtered.forEach(inv => {
         const month = inv.issue_date.slice(0, 7);
-        monthlyTotals[month] = (monthlyTotals[month] || 0) + inv.amount_total;
+        monthlyTotals[month] = (monthlyTotals[month] || 0) + Number(inv.amount_total || 0);
       });
 
       const months = Object.keys(monthlyTotals).sort();
@@ -132,12 +133,12 @@ export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _curre
     queryKey: ["revenue-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
       const invoices = await fetchTable<Invoice>('invoices');
-      const filtered = filterByDateRange(invoices, 'issue_date', dateRange);
+      const filtered = filterByDateRange(invoices, 'issue_date', dateRange).filter(isRealizedInvoice);
 
       const grouped: Record<string, number> = {};
       filtered.forEach(inv => {
         const key = inv.channel || 'Other';
-        grouped[key] = (grouped[key] || 0) + inv.amount_total;
+        grouped[key] = (grouped[key] || 0) + Number(inv.amount_total || 0);
       });
 
       const total = Object.values(grouped).reduce((s, v) => s + v, 0);
@@ -157,24 +158,37 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
   return useQuery({
     queryKey: ["expense-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const expenses = await fetchTable<ExpenseNew>('expenses_new');
+      // Fetch expenses (required) and budgets (optional — table may not exist yet)
+      const [transactions, budgets] = await Promise.all([
+        fetchTable<Transaction>('transactions'),
+        fetchTable<Budget>('budgets').catch(() => [] as Budget[]),
+      ]);
+      const expenses = transactions.filter((t) => t.type === 'expense');
       const filtered = filterByDateRange(expenses, 'date', dateRange);
 
-      const grouped: Record<string, number> = {};
-      filtered.forEach(exp => {
-        const key = exp.category || 'Other';
-        grouped[key] = (grouped[key] || 0) + exp.amount;
+      const grouped: Record<string, { amount: number; budget: number }> = {};
+      
+      budgets.forEach(b => {
+        const key = b.category;
+        if (!grouped[key]) grouped[key] = { amount: 0, budget: 0 };
+        grouped[key].budget += Number(b.amount || 0);
       });
 
-      const total = Object.values(grouped).reduce((s, v) => s + v, 0);
-      return Object.entries(grouped).map(([name, amount], i) => ({
+      filtered.forEach(exp => {
+        const key = exp.category || 'Other';
+        if (!grouped[key]) grouped[key] = { amount: 0, budget: 0 };
+        grouped[key].amount += Number(exp.amount || 0);
+      });
+
+      const total = Object.values(grouped).reduce((s, v) => s + v.amount, 0);
+      return Object.entries(grouped).map(([name, data], i) => ({
         id: `exp-${i}`,
         name,
         category: name,
-        amount,
-        percentage: total > 0 ? (amount / total) * 100 : 0,
+        amount: data.amount,
+        percentage: total > 0 ? (data.amount / total) * 100 : 0,
         growth_rate: 0,
-        budget_amount: 0,
+        budget_amount: data.budget,
       })) as ExpenseCategory[];
     },
   });
@@ -184,7 +198,8 @@ export function useExpenseTrends(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["expense-trends", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const expenses = await fetchTable<ExpenseNew>('expenses_new');
+      const transactions = await fetchTable<Transaction>('transactions');
+      const expenses = transactions.filter((t) => t.type === 'expense');
       const filtered = filterByDateRange(expenses, 'date', dateRange);
       if (filtered.length === 0) return [];
 
@@ -199,9 +214,9 @@ export function useExpenseTrends(dateRange?: { from?: Date; to?: Date }) {
         const key = daily ? format(d, "MMM dd") : format(d, "MMM yyyy");
         const dateKey = daily ? format(d, "yyyy-MM-dd") : format(d, "yyyy-MM");
         if (!agg[key]) agg[key] = { period: key, dateKey, expenses: 0, cogs: 0, opex: 0 };
-        agg[key].expenses += exp.amount;
-        if (exp.category === 'cogs') agg[key].cogs += exp.amount;
-        else agg[key].opex += exp.amount;
+        agg[key].expenses += Number(exp.amount || 0);
+        if (exp.category === 'cogs') agg[key].cogs += Number(exp.amount || 0);
+        else agg[key].opex += Number(exp.amount || 0);
       });
 
       return Object.values(agg).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
@@ -213,38 +228,49 @@ export function useRevenueTrends(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["revenue-trends", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const [invoices, payments] = await Promise.all([
+      const [invoices, transactions] = await Promise.all([
         fetchTable<Invoice>('invoices'),
-        fetchTable<Payment>('payments'),
+        fetchTable<Transaction>('transactions'),
       ]);
-      const filteredInv = filterByDateRange(invoices, 'issue_date', dateRange);
+      const payments = transactions.filter((t) => t.type === 'income');
+      const filteredInv = filterByDateRange(invoices, 'issue_date', dateRange).filter(isRealizedInvoice);
       const filteredPmt = filterByDateRange(payments, 'date', dateRange);
 
-      if (filteredInv.length === 0 && filteredPmt.length === 0) return [];
-
+      // Ensure we always have a timeline even if there's no data
       const allDates = [
         ...filteredInv.map(i => i.issue_date),
         ...filteredPmt.map(p => p.date),
       ].sort();
       const rangeDays = allDates.length > 1
         ? Math.abs((new Date(allDates[allDates.length - 1]).getTime() - new Date(allDates[0]).getTime()) / 86400000)
-        : 0;
-      const daily = rangeDays <= 30;
+        : 180;
+      const daily = rangeDays <= 30 && dateRange?.from;
 
       const agg: Record<string, RevenueTrendData> = {};
+
+      // Initialize the last 6 months to ensure the chart always renders
+      if (!daily) {
+        const today = new Date();
+        for (let i = 5; i >= 0; i--) {
+          const d = subMonths(today, i);
+          const key = format(d, "MMM yyyy");
+          const dateKey = format(d, "yyyy-MM");
+          agg[key] = { period: key, dateKey, accrual: 0, cash: 0 };
+        }
+      }
       filteredInv.forEach(inv => {
         const d = new Date(inv.issue_date + 'T00:00:00');
         const key = daily ? format(d, "MMM dd") : format(d, "MMM yyyy");
         const dateKey = daily ? format(d, "yyyy-MM-dd") : format(d, "yyyy-MM");
         if (!agg[key]) agg[key] = { period: key, dateKey, accrual: 0, cash: 0 };
-        agg[key].accrual += inv.amount_total;
+        agg[key].accrual += Number(inv.amount_total || 0);
       });
       filteredPmt.forEach(pmt => {
         const d = new Date(pmt.date + 'T00:00:00');
         const key = daily ? format(d, "MMM dd") : format(d, "MMM yyyy");
         const dateKey = daily ? format(d, "yyyy-MM-dd") : format(d, "yyyy-MM");
         if (!agg[key]) agg[key] = { period: key, dateKey, accrual: 0, cash: 0 };
-        agg[key].cash += pmt.amount;
+        agg[key].cash += Number(pmt.amount || 0);
       });
 
       return Object.values(agg).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
@@ -266,8 +292,8 @@ export function useTopClients() {
       ]);
       const customerMap = new Map(customers.map(c => [c.id, c.name]));
       const grouped: Record<string, number> = {};
-      invoices.forEach(inv => {
-        if (inv.customer_id) grouped[inv.customer_id] = (grouped[inv.customer_id] || 0) + inv.amount_total;
+      invoices.filter(isRealizedInvoice).forEach(inv => {
+        if (inv.customer_id) grouped[inv.customer_id] = (grouped[inv.customer_id] || 0) + Number(inv.amount_total || 0);
       });
       return Object.entries(grouped)
         .map(([id, revenue]) => ({ id, name: customerMap.get(id) || 'Unknown', revenue, growth_rate: 0 }))
@@ -285,7 +311,7 @@ export function useVendors(_dateRange?: { from?: Date; to?: Date }) {
       const grouped: Record<string, { name: string; category: string; amount: number }> = {};
       bills.forEach(b => {
         if (!grouped[b.vendor_name]) grouped[b.vendor_name] = { name: b.vendor_name, category: b.category || 'Other', amount: 0 };
-        grouped[b.vendor_name].amount += b.open_amount;
+        grouped[b.vendor_name].amount += Number(b.open_amount || 0);
       });
       return Object.entries(grouped)
         .map(([, v], i) => ({ id: `vendor-${i}`, ...v }))
@@ -299,9 +325,12 @@ export function useKPIs() {
 }
 
 export function formatCurrency(amount: number): string {
-  if (amount >= 1000000) return `$${(amount / 1000000).toFixed(2)}M`;
-  if (amount >= 1000) return `$${(amount / 1000).toFixed(2)}K`;
-  return `$${amount.toFixed(2)}`;
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export function formatPercentage(percentage: number): string {

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { fetchTable } from "./tableCache";
+import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
-import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
+import type { Transaction } from "@/lib/data/transactions.repo";
 import { DrillDownData } from "@/components/ProfitabilityDataTable";
 
 export function useProfitabilityDrillDown() {
@@ -19,12 +19,13 @@ export function useProfitabilityDrillDown() {
     queryFn: async (): Promise<DrillDownData | null> => {
       if (!drillDownRequest) return null;
 
-      const [invoices, expenses] = await Promise.all([
+      const [invoices, transactions] = await Promise.all([
         fetchTable<Invoice>('invoices'),
-        fetchTable<ExpenseNew>('expenses_new'),
+        fetchTable<Transaction>('transactions'),
       ]);
+      const expenses = transactions.filter((t) => t.type === 'expense');
 
-      let transactionData: any[] = [];
+      let transactionData: { date: string; dateKey: string; description: string; amount: number; category: string | undefined }[] = [];
 
       if (drillDownRequest.type === 'waterfall') {
         if (drillDownRequest.metric === 'Revenue') {
@@ -32,24 +33,24 @@ export function useProfitabilityDrillDown() {
             date: format(new Date(i.issue_date), 'MMM dd, yyyy'),
             dateKey: i.issue_date,
             description: i.channel || 'Revenue',
-            amount: i.amount_total,
-            category: i.channel,
+            amount: Number(i.amount_total) || 0,
+            category: i.channel ?? undefined,
           }));
         } else if (drillDownRequest.metric === 'COGS') {
-          transactionData = expenses.filter(e => ['cogs', 'Cost of Sales', 'Direct Costs', 'Materials'].includes(e.category)).slice(0, 50).map(e => ({
+          transactionData = expenses.filter(e => ['cogs', 'Cost of Sales', 'Direct Costs', 'Materials'].includes(e.category ?? '')).slice(0, 50).map(e => ({
             date: format(new Date(e.date), 'MMM dd, yyyy'),
             dateKey: e.date,
             description: e.vendor || 'Cost of Goods',
-            amount: e.amount,
-            category: e.category,
+            amount: Number(e.amount) || 0,
+            category: e.category ?? undefined,
           }));
         } else {
           transactionData = expenses.slice(0, 50).map(e => ({
             date: format(new Date(e.date), 'MMM dd, yyyy'),
             dateKey: e.date,
             description: e.vendor || e.category || 'Operating Expense',
-            amount: e.amount,
-            category: e.category,
+            amount: Number(e.amount) || 0,
+            category: e.category ?? undefined,
           }));
         }
       } else if (drillDownRequest.type === 'margin-trend' && drillDownRequest.dateKey) {
@@ -58,11 +59,11 @@ export function useProfitabilityDrillDown() {
         const endStr = format(endOfMonth(base), 'yyyy-MM-dd');
         const revTx = invoices.filter(i => i.issue_date >= startStr && i.issue_date <= endStr).map(i => ({
           date: format(new Date(i.issue_date), 'MMM dd, yyyy'), dateKey: i.issue_date,
-          description: `Revenue - ${i.channel || 'General'}`, amount: i.amount_total, category: 'Revenue',
+          description: `Revenue - ${i.channel || 'General'}`, amount: Number(i.amount_total) || 0, category: 'Revenue',
         }));
         const expTx = expenses.filter(e => e.date >= startStr && e.date <= endStr).map(e => ({
           date: format(new Date(e.date), 'MMM dd, yyyy'), dateKey: e.date,
-          description: e.vendor || e.category || 'Expense', amount: -e.amount, category: e.category,
+          description: e.vendor || e.category || 'Expense', amount: -(Number(e.amount) || 0), category: e.category ?? undefined,
         }));
         transactionData = [...revTx, ...expTx].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50);
       }

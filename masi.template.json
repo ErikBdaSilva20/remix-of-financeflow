@@ -17,7 +17,8 @@
     { "id": "profitability",  "route": "/profitability","title": "Profitability",  "file": "src/pages/Profitability" },
     { "id": "cash-flow",      "route": "/cash-flow",    "title": "Cash Flow",      "file": "src/pages/CashFlow" },
     { "id": "receivables",    "route": "/receivables",  "title": "Receivables",    "file": "src/pages/Receivables" },
-    { "id": "reports",        "route": "/reports",      "title": "Reports",        "file": "src/pages/Reports" }
+    { "id": "reports",        "route": "/reports",      "title": "Reports",        "file": "src/pages/Reports" },
+    { "id": "customers",      "route": "/customers",    "title": "Customers",      "file": "src/pages/Customers" }
   ],
   "editable": {
     "allow": [
@@ -29,6 +30,8 @@
       "src/App.css"
     ],
     "protect": [
+      "src/hooks/infra/**",
+      "src/lib/auth.tsx",
       "src/lib/data/client.ts",
       "src/lib/data/types.gen.ts",
       "src/lib/data/preview-fixtures.ts",

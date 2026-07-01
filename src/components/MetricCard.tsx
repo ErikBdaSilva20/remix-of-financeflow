@@ -22,7 +22,6 @@ export function MetricCard({
   value,
   fullValue,
   change,
-  changeType = "neutral",
   hasData = true,
   icon,
   className,

@@ -1,6 +1,7 @@
+import { BudgetDialog } from '@/components/BudgetDialog';
 import { DonutChart } from '@/components/DonutChart';
+import { ExpenseDialog } from '@/components/ExpenseDialog';
 import { ExpenseDrillDownTable } from '@/components/ExpenseDrillDownTable';
-import { FilterHeader, FilterState } from '@/components/FilterHeader';
 import { MetricCard } from '@/components/MetricCard';
 import {
   AlertTriangle,
@@ -14,15 +15,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 import { useExpenseDrillDown } from '@/hooks/useExpenseDrillDown';
 import {
   useExpenseCategories,
   useExpenseTrends,
-  useFinancialMetrics,
   useVendors,
 } from '@/hooks/useFinancialData';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useState } from 'react';
 import {
   Bar,
@@ -37,32 +36,25 @@ import {
 
 // Note: Expense trend data is now fetched and aggregated from the backend with dynamic granularity
 
+const formatBRL = (amount: number) =>
+  `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 const Expenses = () => {
-  const [filters, setFilters] = useState<FilterState>({
-    dateRange: {},
-    currency: 'BRL',
-  });
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   const [vendorPage, setVendorPage] = useState(1);
   const vendorsPerPage = 5;
-  const { data: metrics, isLoading: metricsLoading } = useFinancialMetrics(filters.dateRange);
-  const { data: expenseCategories, isLoading: expensesLoading } = useExpenseCategories(
-    filters.dateRange
-  );
-  const { data: expenseTrendData, isLoading: trendsLoading } = useExpenseTrends(filters.dateRange);
-  const { data: vendors, isLoading: vendorsLoading } = useVendors(filters.dateRange);
-  const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency);
+  const { data: expenseCategories } = useExpenseCategories();
+  const { data: expenseTrendData } = useExpenseTrends();
+  const { data: vendors } = useVendors();
   const {
     drillDownData,
     isLoading: drillDownLoading,
     openCategoryDrillDown,
     openPeriodDrillDown,
     clearDrillDown,
-  } = useExpenseDrillDown(filters.dateRange);
+  } = useExpenseDrillDown({});
 
-  const formatWithCurrency = (amount: number, date?: string) => {
-    const converted = convertAmount(amount, 'USD', date);
-    return `${currencySymbol}${converted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
 
   // Pagination calculations
   const totalVendors = vendors?.length || 0;
@@ -70,11 +62,6 @@ const Expenses = () => {
   const startIndex = (vendorPage - 1) * vendorsPerPage;
   const endIndex = startIndex + vendorsPerPage;
   const paginatedVendors = vendors?.slice(startIndex, endIndex) || [];
-
-  // Helper function to get metric by type
-  const getMetric = (type: string) => {
-    return metrics?.find((m) => m.metric_type === type);
-  };
 
   const colorPalette = [
     '#FF6B6B',
@@ -104,8 +91,10 @@ const Expenses = () => {
     '#8338EC',
   ];
 
-  const expenses = getMetric('expenses');
   const totalExpenses = expenseCategories?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
+  // Dias reais do mês corrente (28/29/30/31) em vez de um divisor fixo em 31
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const totalBudget =
     expenseCategories?.reduce((sum, exp) => sum + (exp.budget_amount || 0), 0) || 0;
 
@@ -124,23 +113,24 @@ const Expenses = () => {
     })) || [];
 
   return (
-    <div className="space-y-0">
-      <FilterHeader filters={filters} onFiltersChange={setFilters} showFxCurrency={true} />
-
-      <div className="space-y-6 p-4">
+    <div className="space-y-6 p-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl text-foreground">Gestão de Despesas</h1>
-            <p className="text-muted-foreground">Monitore e controle despesas empresariais</p>
+            <h1 className="text-2xl md:text-3xl text-foreground">Gestão de Despesas</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Monitore e controle despesas empresariais</p>
           </div>
+          <Button onClick={() => setExpenseDialogOpen(true)} className="w-full sm:w-auto">
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nova Despesa</span>
+          </Button>
         </div>
 
         {/* Expense Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total de Despesas"
-            value={formatWithCurrency(totalExpenses)}
+            value={formatBRL(totalExpenses)}
             // change={expenses ? "+5.2% vs last month" : undefined}
             changeType="negative"
             gradient="primary"
@@ -148,14 +138,14 @@ const Expenses = () => {
           />
           <MetricCard
             title="Despesas Operacionais"
-            value={formatWithCurrency(operatingExpenses)}
+            value={formatBRL(operatingExpenses)}
             // change={expenseCategories && expenseCategories.length > 0 ? "+3.1% vs last month" : undefined}
             changeType="negative"
             icon={<Building className="w-6 h-6 text-orange-600" />}
           />
           <MetricCard
             title="Variação de Orçamento"
-            value={formatWithCurrency(totalBudget - totalExpenses)}
+            value={formatBRL(totalBudget - totalExpenses)}
             change={
               totalBudget > 0
                 ? totalExpenses > totalBudget
@@ -168,7 +158,7 @@ const Expenses = () => {
           />
           <MetricCard
             title="Gasto Médio Diário"
-            value={formatWithCurrency(totalExpenses / 31)}
+            value={formatBRL(totalExpenses / daysInMonth)}
             // change={expenses ? "+1.8% vs last month" : undefined}
             changeType="negative"
             icon={<AlertTriangle className="w-6 h-6 text-secondary" />}
@@ -195,18 +185,15 @@ const Expenses = () => {
                   return (
                     <div
                       key={expense.id}
-                      className="flex items-center justify-between p-4 bg-muted rounded-lg"
+                      className="flex flex-col p-4 bg-muted rounded-lg gap-2"
                     >
-                      <div className="flex items-center gap-3">
-                        <IconComponent className="w-5 h-5 text-primary" />
-                        <div>
-                          <p className="font-medium">{expense.name}</p>
-                        </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <IconComponent className="w-4 h-4" />
+                        <span className="text-sm font-medium">{expense.name}</span>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          {formatWithCurrency(expense.amount)} ({expense.percentage?.toFixed(0)}%)
-                        </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-lg font-semibold">{formatBRL(expense.amount)}</span>
+                        <Badge variant="secondary" className="text-xs">{expense.percentage?.toFixed(0)}%</Badge>
                       </div>
                     </div>
                   );
@@ -227,18 +214,15 @@ const Expenses = () => {
                 return (
                   <div
                     key={expense.id}
-                    className="flex items-center justify-between p-4 bg-muted rounded-lg"
+                    className="flex flex-col p-4 bg-muted rounded-lg gap-2"
                   >
-                    <div className="flex items-center gap-3">
-                      <IconComponent className="w-5 h-5 text-secondary" />
-                      <div>
-                        <p className="font-medium">{expense.name}</p>
-                      </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <IconComponent className="w-4 h-4" />
+                      <span className="text-sm font-medium">{expense.name}</span>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">
-                        {formatWithCurrency(expense.amount)} ({expense.percentage?.toFixed(0)}%)
-                      </p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-lg font-semibold">{formatBRL(expense.amount)}</span>
+                      <Badge variant="secondary" className="text-xs">{expense.percentage?.toFixed(0)}%</Badge>
                     </div>
                   </div>
                 );
@@ -251,7 +235,7 @@ const Expenses = () => {
         <DonutChart
           data={donutData}
           title="Detalhamento de Despesas por Categoria"
-          centerValue={formatWithCurrency(totalExpenses)}
+          centerValue={formatBRL(totalExpenses)}
           centerLabel="Despesas Totais"
           onSliceClick={(entry) => openCategoryDrillDown(entry.name)}
         />
@@ -261,82 +245,81 @@ const Expenses = () => {
           <CardHeader>
             <CardTitle className="text-lg">Tendências Mensais de Despesas</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="w-full min-w-0 p-4">
             {expenseTrendData && expenseTrendData.length > 0 ? (
-              <div className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={expenseTrendData}
-                    margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-                    barSize={45}
-                    barGap={8}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#E2E8F0"
-                      opacity={0.3}
-                    />
-                    <XAxis
-                      dataKey="period"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      width={80}
-                      tickFormatter={(value) => {
-                        const converted = convertAmount(value, 'USD');
-                        if (converted >= 1000000)
-                          return `${currencySymbol}${(converted / 1000000).toFixed(1)}M`;
-                        if (converted >= 1000)
-                          return `${currencySymbol}${(converted / 1000).toFixed(0)}K`;
-                        return `${currencySymbol}${converted.toFixed(0)}`;
-                      }}
-                    />
-                    <Tooltip
-                      formatter={(value: any) => [formatWithCurrency(value), '']}
-                      labelStyle={{ color: '#0F172A' }}
-                      contentStyle={{
-                        backgroundColor: '#F0FDF4',
-                        border: '1px solid #E2E8F0',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                    <Bar
-                      dataKey="expenses"
-                      fill="#059669"
-                      name="Despesas Totais"
-                      radius={[8, 8, 0, 0]}
-                      onClick={(data: any) => {
-                        const payload = data?.payload;
-                        if (!payload) return;
-                        const dateKey = payload.dateKey as string | undefined;
-                        if (!dateKey) return;
-                        const granularity: 'day' | 'month' =
-                          dateKey.length === 10 ? 'day' : 'month';
-                        openPeriodDrillDown(dateKey, payload.period, granularity);
-                      }}
-                      cursor="pointer"
-                    />
-                    <Bar
-                      dataKey="cogs"
-                      fill="#047857"
-                      name="CPV (Custo de Vendas)"
-                      radius={[8, 8, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="opex"
-                      fill="#0891B2"
-                      name="Despesas Operacionais (OPEX)"
-                      radius={[8, 8, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <div className="overflow-x-auto w-full">
+                <div style={{ minWidth: '520px' }} className="h-96 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={expenseTrendData}
+                        margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                        barSize={45}
+                        barGap={8}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="#E2E8F0"
+                          opacity={0.3}
+                        />
+                        <XAxis
+                          dataKey="period"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                          width={80}
+                          tickFormatter={(value) => {
+                            if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(1)}M`;
+                            if (value >= 1000) return `R$ ${(value / 1000).toFixed(0)}K`;
+                            return `R$ ${value.toFixed(0)}`;
+                          }}
+                        />
+                        <Tooltip
+                          formatter={(value: number) => [formatBRL(value), '']}
+                          labelStyle={{ color: '#0F172A' }}
+                          contentStyle={{
+                            backgroundColor: '#F0FDF4',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: '8px',
+                          }}
+                        />
+                        <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                        <Bar
+                          dataKey="expenses"
+                          fill="#059669"
+                          name="Despesas Totais"
+                          radius={[8, 8, 0, 0]}
+                          onClick={(data: { payload?: { dateKey?: string; period: string } }) => {
+                            const payload = data?.payload;
+                            if (!payload) return;
+                            const dateKey = payload.dateKey as string | undefined;
+                            if (!dateKey) return;
+                            const granularity: 'day' | 'month' =
+                              dateKey.length === 10 ? 'day' : 'month';
+                            openPeriodDrillDown(dateKey, payload.period, granularity);
+                          }}
+                          cursor="pointer"
+                        />
+                        <Bar
+                          dataKey="cogs"
+                          fill="#047857"
+                          name="CPV (Custo de Vendas)"
+                          radius={[8, 8, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="opex"
+                          fill="#0891B2"
+                          name="Despesas Operacionais (OPEX)"
+                          radius={[8, 8, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
             ) : (
               <div className="flex items-center justify-center py-8">
                 <span className="inline-flex items-center justify-center rounded-md bg-muted px-3 py-1 text-sm text-muted-foreground">
@@ -349,13 +332,18 @@ const Expenses = () => {
 
         {/* Budget vs Actual - full width */}
         <Card className="p-6">
-          <h3 className="text-lg mb-4">Orçamento vs Realizado</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg">Orçamento vs Realizado</h3>
+            <Button variant="outline" size="sm" onClick={() => setBudgetDialogOpen(true)}>
+              Definir Orçamento
+            </Button>
+          </div>
           {totalBudget > 0 || totalExpenses > 0 ? (
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Orçado</span>
-                  <span className="text-sm">{formatWithCurrency(totalBudget)}</span>
+                  <span className="text-sm">{formatBRL(totalBudget)}</span>
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full">
                   <div
@@ -368,7 +356,7 @@ const Expenses = () => {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Realizado</span>
-                  <span className="text-sm">{formatWithCurrency(totalExpenses)}</span>
+                  <span className="text-sm">{formatBRL(totalExpenses)}</span>
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full">
                   <div
@@ -390,7 +378,7 @@ const Expenses = () => {
                     className={`text-sm font-semibold ${totalBudget > 0 ? (totalExpenses > totalBudget ? 'text-destructive' : 'text-success') : 'text-muted-foreground'}`}
                   >
                     {totalBudget > 0 && (totalExpenses > totalBudget ? '+' : '-')}
-                    {formatWithCurrency(Math.abs(totalBudget - totalExpenses))}(
+                    {formatBRL(Math.abs(totalBudget - totalExpenses))}(
                     {totalBudget > 0
                       ? (((totalExpenses - totalBudget) / totalBudget) * 100).toFixed(1) + '%'
                       : 'N/A'}
@@ -412,7 +400,7 @@ const Expenses = () => {
               drillDownData={drillDownData}
               onClose={clearDrillDown}
               isLoading={drillDownLoading}
-              formatCurrency={formatWithCurrency}
+              formatCurrency={formatBRL}
             />
           </div>
         )}
@@ -431,7 +419,7 @@ const Expenses = () => {
                   <p className="text-xs text-muted-foreground">{vendor.category}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">{formatWithCurrency(vendor.amount)}</p>
+                  <p className="font-semibold">{formatBRL(vendor.amount)}</p>
                 </div>
               </div>
             ))}
@@ -467,8 +455,10 @@ const Expenses = () => {
             </div>
           )}
         </Card>
+
+        <ExpenseDialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen} />
+        <BudgetDialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen} />
       </div>
-    </div>
   );
 };
 

@@ -1,227 +1,310 @@
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MetricCard } from "@/components/MetricCard";
-import { TrendingUp, TrendingDown, DollarSign, Banknote } from "lucide-react";
-import { FilterHeader, FilterState } from "@/components/FilterHeader";
-import { useQuery } from "@tanstack/react-query";
-import { listBankTransactions } from "@/lib/data/bank_transactions.repo";
-import { listAccounts } from "@/lib/data/accounts.repo";
-import { format, parseISO, differenceInDays } from "date-fns";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
-import { useCashFlowDrillDown } from "@/hooks/useCashFlowDrillDown";
-import { CashFlowDataTable } from "@/components/CashFlowDataTable";
+import { CashFlowDataTable } from '@/components/CashFlowDataTable';
+import { MetricCard } from '@/components/MetricCard';
+import { Card } from '@/components/ui/card';
+import { useCashFlowDrillDown } from '@/hooks/useCashFlowDrillDown';
+import { listTransactions } from '@/lib/data/transactions.repo';
+import { useQuery } from '@tanstack/react-query';
+import { parseISO } from 'date-fns';
+import { Banknote, ChevronLeft, ChevronRight, DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+
+const formatBRL = (amount: number) =>
+  `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const MONTH_LABELS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+interface MonthBucket {
+  dateKey: string; // yyyy-MM
+  inflow: number;
+  outflow: number;
+  net: number;
+  hasData: boolean;
+}
+
+const growthPct = (current: number, previous: number) => {
+  if (previous === 0) return current > 0 ? 100 : current < 0 ? -100 : 0;
+  return ((current - previous) / Math.abs(previous)) * 100;
+};
+
+const actualCurrentYear = new Date().getFullYear();
+const actualCurrentMonthIndex = new Date().getMonth();
 
 const CashFlow = () => {
-  const [filters, setFilters] = useState<FilterState>({
-    dateRange: {},
-    currency: 'BRL'
-  });
-
-  const { convertAmount, currencySymbol } = useCurrencyConversion(filters.currency);
+  const [year, setYear] = useState(actualCurrentYear);
+  // Padrão: foca só no mês atual (com o anterior pra comparação). O ano
+  // completo é carregado/renderizado só quando o usuário pede ("sob demanda").
+  const [showFullYear, setShowFullYear] = useState(false);
   const { drillDownData, handlePeriodClick, clearDrillDown } = useCashFlowDrillDown();
 
-  const formatWithCurrency = (amount: number) => {
-    return `${currencySymbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const toggleFullYear = () => {
+    setShowFullYear((prev) => {
+      const next = !prev;
+      if (!next) setYear(actualCurrentYear);
+      return next;
+    });
   };
 
   const { data: cashflowData } = useQuery({
-    queryKey: ["cashflow-data", filters.dateRange, filters.currency],
+    queryKey: ['cashflow-data', year],
     queryFn: async () => {
-      const allTxns = await listBankTransactions();
+      const transactions = await listTransactions();
 
-      const fromStr = filters.dateRange?.from ? format(filters.dateRange.from, 'yyyy-MM-dd') : null;
-      const toStr = filters.dateRange?.to ? format(filters.dateRange.to, 'yyyy-MM-dd') : null;
+      // Caixa real: pagamentos recebidos (entrada) e despesas (saída)
+      const allTxns = [
+        ...transactions.filter((t) => t.type === 'income').map((p) => ({ date: p.date, amount: Math.abs(Number(p.amount || 0)) })),
+        ...transactions.filter((t) => t.type === 'expense').map((e) => ({ date: e.date, amount: -Math.abs(Number(e.amount || 0)) })),
+      ];
 
-      const data = allTxns
-        .filter(row => {
-          if (fromStr && row.date < fromStr) return false;
-          if (toStr && row.date > toStr) return false;
-          return true;
-        })
-        .sort((a, b) => a.date.localeCompare(b.date));
+      // Saldo/fluxo "vida toda" — independe do ano selecionado no comparativo mensal
+      const totals = allTxns.reduce(
+        (acc, row) => {
+          const amt = Number(row.amount || 0);
+          return {
+            inflow: acc.inflow + (amt > 0 ? amt : 0),
+            outflow: acc.outflow + (amt < 0 ? Math.abs(amt) : 0),
+          };
+        },
+        { inflow: 0, outflow: 0 }
+      );
 
-      const totals = data.reduce((acc, row) => {
-        const inflow = row.amount > 0 ? row.amount : 0;
-        const outflow = row.amount < 0 ? Math.abs(row.amount) : 0;
-        return {
-          inflow: acc.inflow + convertAmount(inflow, 'USD', row.date),
-          outflow: acc.outflow + convertAmount(outflow, 'USD', row.date),
-        };
-      }, { inflow: 0, outflow: 0 });
+      // Comparativo mês a mês: 12 baldes fixos (Jan-Dez) do ano selecionado
+      const months: MonthBucket[] = Array.from({ length: 12 }, (_, i) => ({
+        dateKey: `${year}-${String(i + 1).padStart(2, '0')}`,
+        inflow: 0,
+        outflow: 0,
+        net: 0,
+        hasData: false,
+      }));
 
-      const dateRangeDays = filters.dateRange?.from && filters.dateRange?.to
-        ? differenceInDays(filters.dateRange.to, filters.dateRange.from)
-        : data.length > 0
-          ? differenceInDays(parseISO(data[data.length - 1].date), parseISO(data[0].date))
-          : 0;
-      const useDailyGranularity = dateRangeDays <= 30;
+      // Dezembro do ano anterior — só pra dar base de comparação ao card de Janeiro
+      let prevDecNet = 0;
+      let prevDecHasData = false;
 
-      const aggregated: Record<string, { period: string; dateKey: string; inflow: number; outflow: number; net: number }> = {};
-      data.forEach(row => {
-        const key = useDailyGranularity
-          ? format(parseISO(row.date), "dd/MM")
-          : format(parseISO(row.date), "MM/yyyy");
-        const dateKey = useDailyGranularity
-          ? format(parseISO(row.date), "yyyy-MM-dd")
-          : format(parseISO(row.date), "yyyy-MM");
-        if (!aggregated[key]) aggregated[key] = { period: key, dateKey, inflow: 0, outflow: 0, net: 0 };
-        const inflow = row.amount > 0 ? row.amount : 0;
-        const outflow = row.amount < 0 ? Math.abs(row.amount) : 0;
-        const ci = convertAmount(inflow, 'USD', row.date);
-        const co = convertAmount(outflow, 'USD', row.date);
-        aggregated[key].inflow += ci;
-        aggregated[key].outflow += co;
-        aggregated[key].net += ci - co;
+      allTxns.forEach((row) => {
+        const d = parseISO(row.date);
+        const amt = Number(row.amount || 0);
+        if (d.getFullYear() === year) {
+          const bucket = months[d.getMonth()];
+          bucket.inflow += amt > 0 ? amt : 0;
+          bucket.outflow += amt < 0 ? Math.abs(amt) : 0;
+          bucket.net += amt;
+          bucket.hasData = true;
+        } else if (d.getFullYear() === year - 1 && d.getMonth() === 11) {
+          prevDecNet += amt;
+          prevDecHasData = true;
+        }
       });
 
-      const chartData = Object.values(aggregated).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-
-      return { totals, chartData };
+      return { totals, months, prevDecNet, prevDecHasData };
     },
   });
 
-  const { data: accountsData } = useQuery({
-    queryKey: ["accounts-balance", filters.currency],
-    queryFn: async () => {
-      const accounts = await listAccounts();
-      return accounts.reduce((sum, account) => {
-        return sum + convertAmount(account.balance, account.currency || 'USD');
-      }, 0);
-    },
-  });
-
-  // Forecast stubbed until E5.3 heuristic is implemented
-  const forecastData = null;
-  const isForecastLoading = false;
+  const months = cashflowData?.months ?? [];
+  const monthsWithData = months.filter((m) => m.hasData);
 
   const netCashFlow = (cashflowData?.totals.inflow || 0) - (cashflowData?.totals.outflow || 0);
-  const totalOutflow = cashflowData?.totals.outflow || 0;
 
-  let dateRangeDays = 30;
-  if (filters.dateRange?.from && filters.dateRange?.to) {
-    dateRangeDays = differenceInDays(filters.dateRange.to, filters.dateRange.from);
-  } else if (cashflowData?.chartData && cashflowData.chartData.length > 0) {
-    const firstDate = (cashflowData.chartData[0] as any).dateKey;
-    const lastDate = (cashflowData.chartData[cashflowData.chartData.length - 1] as any).dateKey;
-    if (firstDate && lastDate) {
-      dateRangeDays = differenceInDays(parseISO(lastDate), parseISO(firstDate));
-    }
-  }
-  const monthlyBurnRate = dateRangeDays > 0 ? (totalOutflow / dateRangeDays) * 30 : 0;
+  // Por padrão a queima mensal é simplesmente a saída do mês atual (sem
+  // precisar de média entre vários meses). Só recai pra média quando o
+  // usuário está navegando por um ano diferente do atual.
+  const currentMonthBucket =
+    year === actualCurrentYear ? months[actualCurrentMonthIndex] : undefined;
+  const monthlyBurnRate = currentMonthBucket?.hasData
+    ? currentMonthBucket.outflow
+    : monthsWithData.length > 0
+      ? monthsWithData.reduce((sum, m) => sum + m.outflow, 0) / monthsWithData.length
+      : 0;
 
-  const cashBalance = accountsData || 0;
+  const cashBalance = netCashFlow;
   const freeCashFlow = netCashFlow;
   const hasData = (cashflowData?.totals.inflow || 0) > 0 || (cashflowData?.totals.outflow || 0) > 0;
   const runwayMonths = monthlyBurnRate > 0 && cashBalance > 0 ? cashBalance / monthlyBurnRate : 0;
 
-  return (
-    <div className="space-y-0">
-      <FilterHeader
-        filters={filters}
-        onFiltersChange={setFilters}
-        showFxCurrency={true}
-      />
+  const buildMonthCard = (i: number) => {
+    const m = months[i];
+    const prev = i > 0
+      ? months[i - 1]
+      : cashflowData?.prevDecHasData
+        ? { net: cashflowData.prevDecNet, hasData: true }
+        : null;
+    const change = m.hasData && prev?.hasData ? growthPct(m.net, prev.net) : undefined;
 
-      <div className="space-y-6 p-4">
-      <div>
-        <h1 className="text-3xl tracking-tight">Gestão de Fluxo de Caixa</h1>
-        <p className="text-muted-foreground">
-          Monitore entradas e saídas de caixa para manter liquidez saudável
-        </p>
+    return {
+      dateKey: m.dateKey,
+      title: MONTH_LABELS[i],
+      value: m.hasData ? formatBRL(m.net) : 'Sem dados',
+      change: change !== undefined ? `${change >= 0 ? '+' : ''}${change.toFixed(1)}%` : undefined,
+      hasData: m.hasData,
+      onClick: m.hasData ? () => handlePeriodClick(`${MONTH_LABELS[i]}/${year}`, m.dateKey) : undefined,
+      icon: m.hasData && m.net < 0 ? <TrendingDown className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />,
+    };
+  };
+
+  // Visão focada (padrão): mês atual + mês anterior, sem precisar montar/exibir o ano inteiro
+  const focusedCards = (() => {
+    if (year !== actualCurrentYear) return [];
+    if (months.length === 0) return []; // query ainda não resolveu
+    const current = buildMonthCard(actualCurrentMonthIndex);
+    if (actualCurrentMonthIndex > 0) {
+      return [buildMonthCard(actualCurrentMonthIndex - 1), current];
+    }
+    if (cashflowData?.prevDecHasData) {
+      const prevYear = actualCurrentYear - 1;
+      return [
+        {
+          dateKey: `${prevYear}-12`,
+          title: `Dezembro/${prevYear}`,
+          value: formatBRL(cashflowData.prevDecNet),
+          change: undefined,
+          hasData: true,
+          onClick: () => handlePeriodClick(`Dezembro/${prevYear}`, `${prevYear}-12`),
+          icon: cashflowData.prevDecNet < 0 ? <TrendingDown className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />,
+        },
+        current,
+      ];
+    }
+    return [current];
+  })();
+
+  return (
+    <div className="space-y-6 p-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl tracking-tight text-foreground">Gestão de Fluxo de Caixa</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Monitore entradas e saídas de caixa para manter liquidez saudável
+          </p>
+        </div>
       </div>
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Fluxo de Caixa Operacional"
-          value={formatWithCurrency(netCashFlow)}
+          value={formatBRL(netCashFlow)}
           changeType="positive"
           hasData={hasData}
           icon={<TrendingUp className="w-5 h-5" />}
         />
         <MetricCard
           title="Fluxo de Caixa Livre"
-          value={formatWithCurrency(freeCashFlow)}
+          value={formatBRL(freeCashFlow)}
           changeType="positive"
           hasData={hasData}
           icon={<DollarSign className="w-5 h-5" />}
         />
         <MetricCard
           title="Saldo em Caixa"
-          value={formatWithCurrency(cashBalance)}
+          value={formatBRL(cashBalance)}
           changeType="positive"
           hasData={cashBalance > 0}
           icon={<Banknote className="w-5 h-5" />}
         />
         <MetricCard
           title="Taxa de Queima Mensal"
-          value={formatWithCurrency(monthlyBurnRate)}
+          value={formatBRL(monthlyBurnRate)}
           changeType="negative"
           hasData={hasData}
           icon={<TrendingDown className="w-5 h-5" />}
         />
       </div>
 
-      {/* Cash Flow Summary - full width grid */}
+      {/* Cash Flow Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex justify-between items-center p-4 bg-card border rounded-xl">
           <span className="text-sm text-muted-foreground">Entradas de Caixa</span>
-          <span className="font-semibold text-success-600">+{formatWithCurrency(cashflowData?.totals.inflow || 0)}</span>
+          <span className="font-semibold text-success-600">
+            +{formatBRL(cashflowData?.totals.inflow || 0)}
+          </span>
         </div>
         <div className="flex justify-between items-center p-4 bg-card border rounded-xl">
           <span className="text-sm text-muted-foreground">Saídas de Caixa</span>
-          <span className="font-semibold text-destructive">-{formatWithCurrency(cashflowData?.totals.outflow || 0)}</span>
+          <span className="font-semibold text-destructive">
+            -{formatBRL(cashflowData?.totals.outflow || 0)}
+          </span>
         </div>
         <div className="flex justify-between items-center p-4 bg-card border rounded-xl">
           <span className="text-sm text-muted-foreground">Runway de Caixa</span>
-          <span className="font-semibold">{runwayMonths > 0 ? `${runwayMonths.toFixed(1)} meses` : 'N/A'}</span>
+          <span className="font-semibold">
+            {runwayMonths > 0 ? `${runwayMonths.toFixed(1)} meses` : 'N/A'}
+          </span>
         </div>
       </div>
 
-      {/* Monthly Trends - full width */}
-      <Card className="p-6">
-        <h3 className="text-lg mb-6">Tendências Mensais do Fluxo de Caixa</h3>
-        {hasData && cashflowData?.chartData && cashflowData.chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={360}>
-            <LineChart
-              data={cashflowData.chartData}
-              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-              onClick={(data) => {
-                if (data && data.activePayload && data.activePayload[0]) {
-                  const payload = data.activePayload[0].payload;
-                  handlePeriodClick(payload.period, payload.dateKey);
-                }
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" opacity={0.4} />
-              <XAxis dataKey="period" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, dx: -8 }}
-                width={80}
-                tickFormatter={(value) => {
-                  const converted = convertAmount(value, 'USD');
-                  if (converted >= 1000000) return `${currencySymbol}${(converted / 1000000).toFixed(1)}M`;
-                  if (converted >= 1000) return `${currencySymbol}${(converted / 1000).toFixed(0)}K`;
-                  return `${currencySymbol}${converted.toFixed(0)}`;
-                }}
-              />
-              <Tooltip
-                formatter={(value) => formatWithCurrency(Number(value))}
-                contentStyle={{ backgroundColor: '#F0FDF4', border: '1px solid #E2E8F0', borderRadius: '8px' }}
-              />
-              <Legend wrapperStyle={{ paddingTop: '20px' }} />
-              <Line type="monotone" dataKey="inflow" stroke="#059669" name="Entradas" strokeWidth={3} dot={{ fill: '#059669', r: 4 }} activeDot={{ cursor: 'pointer', r: 6 }} />
-              <Line type="monotone" dataKey="outflow" stroke="#ef4444" name="Saídas" strokeWidth={3} dot={{ fill: '#ef4444', r: 4 }} activeDot={{ cursor: 'pointer', r: 6 }} />
-              <Line type="monotone" dataKey="net" stroke="#0891B2" name="Fluxo Líquido" strokeWidth={3} dot={{ fill: '#0891B2', r: 4 }} activeDot={{ cursor: 'pointer', r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
+      {/* Monthly comparison */}
+      <Card className="p-4 md:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h3 className="text-base md:text-lg">
+            {showFullYear ? `Comparativo Mensal — ${year}` : 'Comparativo Mensal — Mês Atual'}
+          </h3>
+          <div className="flex items-center gap-2">
+            {showFullYear && (
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setYear((y) => y - 1)}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setYear((y) => y + 1)}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+            <Button variant="ghost" size="sm" onClick={toggleFullYear}>
+              {showFullYear ? 'Mostrar só o mês atual' : 'Ver ano completo'}
+            </Button>
+          </div>
+        </div>
+
+        {showFullYear ? (
+          monthsWithData.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <span className="inline-flex items-center justify-center rounded-md bg-muted px-3 py-1 text-sm text-muted-foreground">
+                Sem dados em {year}
+              </span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+              {months.map((m, i) => {
+                const card = buildMonthCard(i);
+                return (
+                  <MetricCard
+                    key={card.dateKey}
+                    title={card.title}
+                    value={card.value}
+                    change={card.change}
+                    hasData={card.hasData}
+                    className={!m.hasData ? 'opacity-50' : undefined}
+                    onClick={card.onClick}
+                    icon={card.icon}
+                  />
+                );
+              })}
+            </div>
+          )
+        ) : focusedCards.length === 0 ? (
           <div className="flex items-center justify-center py-12">
-            <span className="inline-flex items-center justify-center rounded-md bg-muted px-3 py-1 text-sm text-muted-foreground">Sem Dados</span>
+            <span className="inline-flex items-center justify-center rounded-md bg-muted px-3 py-1 text-sm text-muted-foreground">
+              Carregando...
+            </span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+            {focusedCards.map((card) => (
+              <MetricCard
+                key={card.dateKey}
+                title={card.title}
+                value={card.value}
+                change={card.change}
+                hasData={card.hasData}
+                className={!card.hasData ? 'opacity-50' : undefined}
+                onClick={card.onClick}
+                icon={card.icon}
+              />
+            ))}
           </div>
         )}
       </Card>
@@ -231,65 +314,9 @@ const CashFlow = () => {
         <CashFlowDataTable
           drillDownData={drillDownData}
           onClose={clearDrillDown}
-          formatCurrency={formatWithCurrency}
+          formatCurrency={formatBRL}
         />
       )}
-
-      {/* Cash Flow Forecast */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-lg">Previsão de Fluxo de Caixa - 12 Meses</h3>
-          <Badge variant="secondary" className="bg-secondary-light text-secondary hover:bg-secondary-light-20">
-            Gerado por IA
-          </Badge>
-        </div>
-        {isForecastLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <span className="inline-flex items-center justify-center rounded-md bg-muted px-3 py-1 text-sm text-muted-foreground">Gerando previsão por IA...</span>
-          </div>
-        ) : forecastData && (forecastData as any[]).length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={forecastData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="period" />
-              <YAxis />
-              <Tooltip formatter={(value) => formatWithCurrency(Number(value))} />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="inflow"
-                stroke="#10b981"
-                name="Entradas Projetadas"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-              />
-              <Line
-                type="monotone"
-                dataKey="outflow"
-                stroke="#ef4444"
-                name="Saídas Projetadas"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-              />
-              <Line
-                type="monotone"
-                dataKey="net"
-                stroke="#3b82f6"
-                name="Líquido Projetado"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex items-center justify-center py-8">
-            <span className="inline-flex items-center justify-center rounded-md bg-muted px-3 py-1 text-sm text-muted-foreground">
-              {hasData ? "Não foi possível gerar previsão" : "Adicione dados de fluxo de caixa para ver a previsão"}
-            </span>
-          </div>
-        )}
-      </Card>
-      </div>
     </div>
   );
 };

@@ -1,28 +1,28 @@
-import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./lib/auth";
-import { AuthWrapper } from "./components/AuthWrapper";
-import { DashboardLayout } from "./components/DashboardLayout";
-import Overview from "./pages/Overview";
-import Revenue from "./pages/Revenue";
-import Expenses from "./pages/Expenses";
-import Profitability from "./pages/Profitability";
-import CashFlow from "./pages/CashFlow";
-import Receivables from "./pages/Receivables";
-import Reports from "./pages/Reports";
-import NotFound from "./pages/NotFound";
-
+import { Toaster as Sonner } from '@/components/ui/sonner';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { AuthWrapper } from './components/AuthWrapper';
+import { DashboardLayout } from './components/DashboardLayout';
+import { AuthProvider } from './lib/auth';
+import CashFlow from './pages/CashFlow';
+import Customers from './pages/Customers';
+import Expenses from './pages/Expenses';
+import NotFound from './pages/NotFound';
+import Overview from './pages/Overview';
+import Profitability from './pages/Profitability';
+import Receivables from './pages/Receivables';
+import Reports from './pages/Reports';
+import Revenue from './pages/Revenue';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Cache stays fresh for 30 min: no refetch when navigating back/forward
-      staleTime: 30 * 60 * 1000,
-      gcTime: 60 * 60 * 1000,
+      // Cache stays fresh for 2 min — long enough to avoid redundant requests on
+      // navigation but short enough that mutations + invalidation always trigger a refetch
+      staleTime: 2 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
       // Não refazer todas as requests só por focar a aba.
       refetchOnWindowFocus: false,
       // Retry inteligente: NÃO re-tentar erros 4xx do gateway (tabela vazia/
@@ -45,20 +45,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-        <AuthWrapper>
-          <Routes>
-            <Route element={<DashboardLayout />}>
-              <Route path="/" element={<Overview />} />
-              <Route path="/revenue" element={<Revenue />} />
-              <Route path="/expenses" element={<Expenses />} />
-              <Route path="/profitability" element={<Profitability />} />
-              <Route path="/cash-flow" element={<CashFlow />} />
-              <Route path="/receivables" element={<Receivables />} />
-              <Route path="/reports" element={<Reports />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthWrapper>
+          <AuthWrapper>
+            <Routes>
+              <Route element={<DashboardLayout />}>
+                <Route path="/" element={<Overview />} />
+                <Route path="/revenue" element={<Revenue />} />
+                <Route path="/expenses" element={<Expenses />} />
+                <Route path="/profitability" element={<Profitability />} />
+                <Route path="/cash-flow" element={<CashFlow />} />
+                <Route path="/receivables" element={<Receivables />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/reports" element={<Reports />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthWrapper>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

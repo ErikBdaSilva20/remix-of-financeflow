@@ -1,13 +1,10 @@
 // PROTECTED — contrato com o tenant-gateway. Não edite este arquivo.
 // A IA só pode editar arquivos em editable.allow (veja masi.template.json).
 
-import { previewApi } from './preview-fixtures';
-
 declare global {
   interface Window {
     __MASI_GW__?: string;
     __MASI_TENANT__?: string;
-    __MASI_PREVIEW__?: boolean;
   }
 }
 
@@ -27,13 +24,6 @@ function getTenantId(): string | null {
 }
 
 async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
-  // PREVIEW: o editor Sandpack injeta __MASI_PREVIEW__ em runtime; para visualização
-  // local sem gateway, VITE_PREVIEW=true ativa o mesmo branch. O gate import.meta.env.DEV
-  // garante que isso NUNCA cai no build de produção do template.
-  if (window.__MASI_PREVIEW__ || (import.meta.env.DEV && import.meta.env.VITE_PREVIEW === 'true')) {
-    return previewApi<T>(method, path, body);
-  }
-
   const gw = getGatewayUrl();
   const tenantId = getTenantId();
 
@@ -48,6 +38,10 @@ async function api<T>(method: string, path: string, body?: unknown): Promise<T> 
   });
 
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith('/auth/')) {
+      // Dev-server session lost (in-memory Map wiped on restart)
+      window.location.reload();
+    }
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`[gateway] ${method} ${path} → ${res.status}: ${text}`);
   }

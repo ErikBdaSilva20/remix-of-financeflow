@@ -7,56 +7,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
   public: {
     Tables: {
-      // ── Lookup (read-only para rep, sem owner_id) ──────────────────────────
-      fx_rates: {
-        Row: {
-          id: string;
-          currency: string;
-          date: string;
-          rate_to_base: number;
-          is_imputed: boolean;
-          created_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['fx_rates']['Row'], 'id' | 'created_at'> & { id?: string; created_at?: string };
-        Update: Partial<Database['public']['Tables']['fx_rates']['Insert']>;
-      };
-
       // ── Business Tables (owner_id obrigatório) ─────────────────────────────
-      accounts: {
-        Row: {
-          id: string;
-          owner_id: string;
-          name: string;
-          type: string;
-          currency: string;
-          balance: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['accounts']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<Database['public']['Tables']['accounts']['Insert']>;
-      };
-
-      bank_transactions: {
-        Row: {
-          id: string;
-          owner_id: string;
-          account_id: string | null;
-          date: string;
-          amount: number;
-          original_amount: number | null;
-          original_currency: string;
-          type: string;
-          counterparty: string | null;
-          category: string | null;
-          description: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['bank_transactions']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<Database['public']['Tables']['bank_transactions']['Insert']>;
-      };
-
       customers: {
         Row: {
           id: string;
@@ -64,6 +15,7 @@ export interface Database {
           name: string;
           email: string | null;
           phone: string | null;
+          job_type: string | null;
           address: string | null;
           notes: string | null;
           created_at: string;
@@ -73,31 +25,13 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['customers']['Insert']>;
       };
 
-      contacts: {
-        Row: {
-          id: string;
-          owner_id: string;
-          customer_id: string | null;
-          name: string;
-          email: string | null;
-          phone: string | null;
-          address: string | null;
-          notes: string | null;
-          avatar_color: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['contacts']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<Database['public']['Tables']['contacts']['Insert']>;
-      };
-
       invoices: {
         Row: {
           id: string;
           owner_id: string;
           customer_id: string | null;
           issue_date: string;
-          due_date: string;
+          due_date: string | null;
           amount_total: number;
           open_amount: number;
           original_amount: number | null;
@@ -105,6 +39,7 @@ export interface Database {
           status: string;
           channel: string | null;
           product_id: string | null;
+          scheduled_payment_date: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -112,33 +47,22 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['invoices']['Insert']>;
       };
 
-      payments: {
+      // Receitas e despesas unificadas — `type` distingue 'income' de 'expense'.
+      // `amount` é sempre positivo; o sinal vem de `type`.
+      transactions: {
         Row: {
           id: string;
           owner_id: string;
-          invoice_id: string | null;
+          type: string; // 'income' | 'expense'
           date: string;
           amount: number;
           original_amount: number | null;
           original_currency: string;
-          status: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['payments']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<Database['public']['Tables']['payments']['Insert']>;
-      };
-
-      expenses_new: {
-        Row: {
-          id: string;
-          owner_id: string;
-          date: string;
-          amount: number;
-          original_amount: number | null;
-          original_currency: string;
-          category: string;
-          vendor: string | null;
+          status: string | null; // income: Received|Pending|Failed|Refunded
+          invoice_id: string | null; // income vinculada a uma fatura
+          customer_id: string | null; // expense vinculada a um cliente (reembolsável)
+          category: string | null; // expense: cogs|marketing|payroll|...
+          vendor: string | null; // expense
           description: string | null;
           project_id: string | null;
           department: string | null;
@@ -147,14 +71,15 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['expenses_new']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<Database['public']['Tables']['expenses_new']['Insert']>;
+        Insert: Omit<Database['public']['Tables']['transactions']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Database['public']['Tables']['transactions']['Insert']>;
       };
 
       vendor_bills: {
         Row: {
           id: string;
           owner_id: string;
+          vendor_id: string | null;
           vendor_name: string;
           issue_date: string;
           due_date: string;
@@ -169,6 +94,22 @@ export interface Database {
         };
         Insert: Omit<Database['public']['Tables']['vendor_bills']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Database['public']['Tables']['vendor_bills']['Insert']>;
+      };
+
+      vendors: {
+        Row: {
+          id: string;
+          owner_id: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+          category: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['vendors']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Database['public']['Tables']['vendors']['Insert']>;
       };
 
       filter_segments: {
@@ -214,6 +155,35 @@ export interface Database {
         };
         Insert: Omit<Database['public']['Tables']['scheduled_reports']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Database['public']['Tables']['scheduled_reports']['Insert']>;
+      };
+
+      budgets: {
+        Row: {
+          id: string;
+          owner_id: string;
+          category: string;
+          period_month: string;
+          amount: number;
+          currency: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['budgets']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Database['public']['Tables']['budgets']['Insert']>;
+      };
+
+      financial_goals: {
+        Row: {
+          id: string;
+          owner_id: string;
+          period_type: string; // month | quarter | year
+          period_key: string; // 2026-07 | 2026-Q3 | 2026
+          target_amount: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['financial_goals']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Database['public']['Tables']['financial_goals']['Insert']>;
       };
     };
     Views: Record<string, never>;

@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: masia_local_db_financeflow
+    environment:
+      POSTGRES_USER: masia
+      POSTGRES_PASSWORD: masia_dev
+      POSTGRES_DB: tenant_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - masia_pgdata_financeflow:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U masia -d tenant_local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  masia_pgdata_financeflow:

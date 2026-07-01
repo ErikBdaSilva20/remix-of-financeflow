@@ -16,6 +16,21 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Extrai a mensagem legível do erro do gateway sem expor detalhes internos
+// Formato do client.ts: "[gateway] METHOD /path → STATUS: <body>"
+function parseGatewayError(err: unknown, fallback: string): string {
+  if (!(err instanceof Error)) return fallback;
+  const match = err.message.match(/→\s*\d+:\s*(.+)$/);
+  if (!match) return fallback;
+  try {
+    const parsed = JSON.parse(match[1]);
+    if (typeof parsed?.error === 'string') return parsed.error;
+  } catch {
+    // body não é JSON — usa fallback genérico
+  }
+  return fallback;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -24,30 +39,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const loadSession = useCallback(async () => {
-    // ╔════════════════════════════════════════════════════════════════════╗
-    // ║  🟡 LOGIN MOCKADO — somente para VISUALIZAÇÃO local (sem gateway).   ║
-    // ║  Injeta um usuário admin fake e PULA a autenticação real, fazendo   ║
-    // ║  o app abrir direto no dashboard (a tela de login não aparece).      ║
-    // ║                                                                      ║
-    // ║  ⚠️  NÃO PUBLIQUE com isto ativo. Para restaurar o login real:       ║
-    // ║      1) apague este bloco MOCK;                                       ║
-    // ║      2) descomente o bloco "LOGIN REAL" logo abaixo.                  ║
-    // ║  Detalhes em docs/LOGIN-MOCKADO.md                                   ║
-    // ╚════════════════════════════════════════════════════════════════════╝
-    setState({
-      user: { id: 'mock-admin', email: 'demo@financeflow.local', name: 'Usuário Demo', role: 'admin' },
-      isLoading: false,
-      error: null,
-    });
-
-    // ── LOGIN REAL (descomente para reativar) ─────────────────────────────
-    // try {
-    //   const user = await auth.me();
-    //   setState({ user, isLoading: false, error: null });
-    // } catch {
-    //   // 401 = não logado; qualquer outro erro também resulta em user null
-    //   setState({ user: null, isLoading: false, error: null });
-    // }
+    try {
+      const user = await auth.me();
+      setState({ user, isLoading: false, error: null });
+    } catch {
+      // 401 = não logado; qualquer outro erro também resulta em user null
+      setState({ user: null, isLoading: false, error: null });
+    }
   }, []);
 
   useEffect(() => {
@@ -60,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = await auth.signIn(email, password);
       setState({ user, isLoading: false, error: null });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao entrar. Verifique email e senha.';
+      const message = parseGatewayError(err, 'Falha ao entrar. Verifique email e senha.');
       setState(s => ({ ...s, isLoading: false, error: message }));
       throw err;
     }
@@ -72,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = await auth.signUp(email, password, name);
       setState({ user, isLoading: false, error: null });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao criar conta.';
+      const message = parseGatewayError(err, 'Falha ao criar conta. Tente novamente.');
       setState(s => ({ ...s, isLoading: false, error: message }));
       throw err;
     }
