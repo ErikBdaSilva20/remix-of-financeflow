@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useQueryClient } from "@tanstack/react-query";
-import { createVendor } from "@/lib/data/vendors.repo";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createVendor, findDuplicateVendor, listVendors } from "@/lib/data/vendors.repo";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -42,6 +42,12 @@ export function VendorDialog({ open, onOpenChange }: VendorDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
 
+  const { data: existingVendors } = useQuery({
+    queryKey: ['vendors-list'],
+    queryFn: listVendors,
+    enabled: open,
+  });
+
   const form = useForm<VendorFormData>({
     resolver: zodResolver(vendorSchema),
     defaultValues: {
@@ -54,6 +60,18 @@ export function VendorDialog({ open, onOpenChange }: VendorDialogProps) {
   });
 
   const onSubmit = async (data: VendorFormData) => {
+    const duplicate = findDuplicateVendor(existingVendors ?? [], {
+      email: data.email,
+      phone: data.phone,
+    });
+    if (duplicate) {
+      const fieldLabel = duplicate.field === 'email' ? 'e-mail' : 'telefone';
+      form.setError(duplicate.field, {
+        message: `Já existe o fornecedor "${duplicate.vendor.name}" com esse ${fieldLabel}`,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await createVendor({
@@ -70,7 +88,11 @@ export function VendorDialog({ open, onOpenChange }: VendorDialogProps) {
       onOpenChange(false);
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : "Erro ao cadastrar fornecedor";
-      toast.error(errMsg);
+      if (/duplicate key|unique constraint/i.test(errMsg)) {
+        toast.error('Já existe um fornecedor cadastrado com esse e-mail ou telefone.');
+      } else {
+        toast.error(errMsg);
+      }
     } finally {
       setIsSubmitting(false);
     }

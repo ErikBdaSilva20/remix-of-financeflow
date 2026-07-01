@@ -2,7 +2,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createCustomer, updateCustomer, type Customer } from '@/lib/data/customers.repo';
+import {
+  createCustomer,
+  findDuplicateCustomer,
+  listCustomers,
+  updateCustomer,
+  type Customer,
+} from '@/lib/data/customers.repo';
 import { db } from '@/lib/data/client';
 import { toast } from 'sonner';
 import {
@@ -67,6 +73,12 @@ export function CustomerDialog({ open, onOpenChange, customer, onSuccess }: Cust
     enabled: !isEditing,
   });
 
+  const { data: existingCustomers } = useQuery({
+    queryKey: ['customers'],
+    queryFn: listCustomers,
+    enabled: open,
+  });
+
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
@@ -115,9 +127,30 @@ export function CustomerDialog({ open, onOpenChange, customer, onSuccess }: Cust
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast.error(error?.message || 'Erro ao salvar cliente');
+      const msg: string = error?.message || '';
+      if (/duplicate key|unique constraint/i.test(msg)) {
+        toast.error('Já existe um cliente cadastrado com esse e-mail ou celular.');
+        return;
+      }
+      toast.error(msg || 'Erro ao salvar cliente');
     },
   });
+
+  const handleSubmit = (data: CustomerFormData) => {
+    const duplicate = findDuplicateCustomer(
+      existingCustomers ?? [],
+      { email: data.email, phone: data.phone },
+      customer?.id
+    );
+    if (duplicate) {
+      const fieldLabel = duplicate.field === 'email' ? 'e-mail' : 'celular';
+      form.setError(duplicate.field, {
+        message: `Já existe o cliente "${duplicate.customer.name}" com esse ${fieldLabel}`,
+      });
+      return;
+    }
+    mutation.mutate(data);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,7 +160,7 @@ export function CustomerDialog({ open, onOpenChange, customer, onSuccess }: Cust
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { format, startOfQuarter } from "date-fns";
+import { format } from "date-fns";
 import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
 import type { Transaction } from "@/lib/data/transactions.repo";
@@ -60,11 +60,11 @@ export function useRevenueExpensesPeriods() {
         return { ...p, revenue: accR, expenses: accX, revenueCount: accRC, expensesCount: accXC };
       });
 
-      // Trimestre atual: comparação mês a mês dos 3 meses do trimestre
-      const quarterStartMonth = startOfQuarter(today).getMonth();
+      // Últimos 3 meses: comparação mês a mês, sempre terminando no mês atual
+      // (mês atual por último/à direita), independente do trimestre-calendário.
       const quarter: PeriodPoint[] = [];
-      for (let m = quarterStartMonth; m <= quarterStartMonth + 2; m++) {
-        const d = new Date(currentYear, m, 1);
+      for (let offset = 2; offset >= 0; offset--) {
+        const d = new Date(currentYear, currentMonth - offset, 1);
         quarter.push({ period: format(d, "MMM"), dateKey: format(d, "yyyy-MM"), revenue: 0, expenses: 0, revenueCount: 0, expensesCount: 0 });
       }
       const quarterByKey = new Map(quarter.map((p) => [p.dateKey, p]));
@@ -77,9 +77,12 @@ export function useRevenueExpensesPeriods() {
         if (p) { p.expenses += Number(exp.amount) || 0; p.expensesCount += 1; }
       });
 
-      // Ano atual: um ponto por mês, de janeiro até o mês atual
+      // Ano atual: um ponto por mês, os 12 meses (jan-dez). Meses futuros
+      // ficam com valor 0 — sem transações lançadas, não há o que somar —
+      // então o gráfico naturalmente "para" no mês atual mesmo mostrando o
+      // eixo completo.
       const year: PeriodPoint[] = [];
-      for (let m = 0; m <= currentMonth; m++) {
+      for (let m = 0; m <= 11; m++) {
         const d = new Date(currentYear, m, 1);
         year.push({ period: format(d, "MMM"), dateKey: format(d, "yyyy-MM"), revenue: 0, expenses: 0, revenueCount: 0, expensesCount: 0 });
       }

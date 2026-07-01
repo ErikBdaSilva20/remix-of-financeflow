@@ -158,6 +158,7 @@ export function InvoiceForm({ onSuccess, onCancel }: InvoiceFormProps) {
       queryClient.invalidateQueries({ queryKey: ['revenue-drill-down'] });
       queryClient.invalidateQueries({ queryKey: ['period-comparison'] });
       queryClient.invalidateQueries({ queryKey: ['revenue-expenses-periods'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-breakdown'] });
       // dashboard
       queryClient.invalidateQueries({ queryKey: ['top-clients'] });
       queryClient.invalidateQueries({ queryKey: ['profitability-data'] });

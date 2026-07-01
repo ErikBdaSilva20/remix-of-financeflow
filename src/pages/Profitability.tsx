@@ -1,7 +1,7 @@
 import { MarginTrendsChart } from '@/components/MarginTrendsChart';
-import { MetricCard } from '@/components/MetricCard';
 import { ProfitWaterfallChart } from '@/components/ProfitWaterfallChart';
 import { ProfitabilityDataTable } from '@/components/ProfitabilityDataTable';
+import { DashboardStatCard, PremiumScope } from '@/components/dashboard/shared';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -44,25 +44,27 @@ const Profitability = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <PremiumScope>
         <div>
-          <h1 className="text-3xl tracking-tight">Análise de Rentabilidade</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Análise de Rentabilidade
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
             Acompanhe suas margens de lucro e analise a rentabilidade do negócio
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32" />
+            <Skeleton key={i} className="h-32 rounded-3xl" />
           ))}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
+          <Skeleton className="h-96 rounded-3xl" />
+          <Skeleton className="h-96 rounded-3xl" />
         </div>
-      </div>
+      </PremiumScope>
     );
   }
 
@@ -75,45 +77,35 @@ const Profitability = () => {
   };
 
   return (
-    <div className="space-y-6 p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl tracking-tight">Análise de Rentabilidade</h1>
-            <p className="text-muted-foreground">
-              Acompanhe suas margens de lucro e analise a rentabilidade do negócio
-            </p>
-          </div>
-        </div>
+    <PremiumScope>
+      <header>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+          Análise de Rentabilidade
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Acompanhe suas margens de lucro e analise a rentabilidade do negócio
+        </p>
+      </header>
 
-        {/* Key Metrics */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title="Margem de Lucro Bruto"
-            value={hasData ? formatMarginPercentage(profitabilityData.grossMargin) : '0.0%'}
-            // change={hasData ? formatChange(2.1) : undefined}
-            changeType="positive"
-            hasData={hasData}
-            icon={<Percent className="w-5 h-5" />}
-          />
-          <MetricCard
-            title="Margem de Lucro Líquido"
-            value={hasData ? formatMarginPercentage(profitabilityData.netMargin) : '0.0%'}
-            // change={hasData ? formatChange(1.8) : undefined}
-            changeType="positive"
-            hasData={hasData}
-            icon={<DollarSign className="w-5 h-5" />}
-          />
-          <MetricCard
-            title="Lucro Operacional"
-            value={
-              hasData ? formatBRL(profitabilityData.operatingProfit) : `R$ 0,00`
-            }
-            // change={hasData ? formatChange(profitabilityData.profitGrowth) : undefined}
-            changeType={getChangeType(profitabilityData.profitGrowth)}
-            hasData={hasData}
-            icon={<TrendingUp className="w-5 h-5" />}
-          />
-        </div>
+      {/* Key Metrics */}
+      <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardStatCard
+          label="Margem de Lucro Bruto"
+          value={hasData ? formatMarginPercentage(profitabilityData.grossMargin) : '0.0%'}
+          Icon={Percent}
+        />
+        <DashboardStatCard
+          label="Margem de Lucro Líquido"
+          value={hasData ? formatMarginPercentage(profitabilityData.netMargin) : '0.0%'}
+          Icon={DollarSign}
+        />
+        <DashboardStatCard
+          label="Lucro Operacional"
+          value={hasData ? formatBRL(profitabilityData.operatingProfit) : `R$ 0,00`}
+          hint={hasData ? getChangeType(profitabilityData.profitGrowth) === 'positive' ? 'Em alta' : getChangeType(profitabilityData.profitGrowth) === 'negative' ? 'Em queda' : 'Estável' : undefined}
+          Icon={TrendingUp}
+        />
+      </section>
 
         {/* Charts Section */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -141,7 +133,7 @@ const Profitability = () => {
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Enhanced Profit Breakdown */}
-          <Card className="p-6">
+          <Card className="rounded-3xl border-border/60 p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <PieChart className="w-5 h-5 text-primary" />
               <h3 className="text-lg">Detalhamento de Lucro</h3>
@@ -172,7 +164,7 @@ const Profitability = () => {
           </Card>
 
           {/* Enhanced Margin Trends */}
-          <Card className="p-6">
+          <Card className="rounded-3xl border-border/60 p-6 shadow-sm">
             <h3 className="text-lg mb-4">Desempenho Atual da Margem</h3>
             <div className="space-y-4">
               {marginTrends.map((trend, index) => {
@@ -237,7 +229,7 @@ const Profitability = () => {
             </div>
           </Card>
         </div>
-    </div>
+    </PremiumScope>
   );
 };
 

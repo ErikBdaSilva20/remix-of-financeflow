@@ -65,6 +65,16 @@ create index if not exists idx_customers_owner on customers(owner_id);
 create or replace trigger trg_customers_updated_at
   before update on customers for each row execute function touch_updated_at();
 
+-- Um cliente não pode repetir e-mail nem celular dentro do mesmo tenant.
+-- Normalizado (e-mail em minúsculas, celular só com dígitos) pra pegar
+-- "Fulano@x.com" == "fulano@x.com" e "(11) 99999-9999" == "11999999999".
+create unique index if not exists uq_customers_owner_email
+  on customers (owner_id, lower(email))
+  where email is not null and email <> '';
+create unique index if not exists uq_customers_owner_phone
+  on customers (owner_id, regexp_replace(phone, '\D', '', 'g'))
+  where phone is not null and phone <> '';
+
 -- Faturas / Contas a Receber
 create table if not exists invoices (
   id                     uuid primary key default gen_random_uuid(),
@@ -138,6 +148,15 @@ create table if not exists vendors (
 create index if not exists idx_vendors_owner on vendors(owner_id);
 create or replace trigger trg_vendors_updated_at
   before update on vendors for each row execute function touch_updated_at();
+
+-- Mesma regra dos clientes: um fornecedor não pode repetir e-mail nem
+-- telefone dentro do mesmo tenant (normalizado igual acima).
+create unique index if not exists uq_vendors_owner_email
+  on vendors (owner_id, lower(email))
+  where email is not null and email <> '';
+create unique index if not exists uq_vendors_owner_phone
+  on vendors (owner_id, regexp_replace(phone, '\D', '', 'g'))
+  where phone is not null and phone <> '';
 
 -- Contas a Pagar (notas de fornecedor)
 create table if not exists vendor_bills (

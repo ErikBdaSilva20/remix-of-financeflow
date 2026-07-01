@@ -8,13 +8,13 @@ import { DashboardLayout } from './components/DashboardLayout';
 import { AuthProvider } from './lib/auth';
 import CashFlow from './pages/CashFlow';
 import Customers from './pages/Customers';
-import Expenses from './pages/Expenses';
 import NotFound from './pages/NotFound';
 import Overview from './pages/Overview';
+import Payables from './pages/Payables';
 import Profitability from './pages/Profitability';
 import Receivables from './pages/Receivables';
 import Reports from './pages/Reports';
-import Revenue from './pages/Revenue';
+import RevenueExpenses from './pages/RevenueExpenses';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,11 +49,11 @@ const App = () => (
             <Routes>
               <Route element={<DashboardLayout />}>
                 <Route path="/" element={<Overview />} />
-                <Route path="/revenue" element={<Revenue />} />
-                <Route path="/expenses" element={<Expenses />} />
+                <Route path="/revenue" element={<RevenueExpenses />} />
                 <Route path="/profitability" element={<Profitability />} />
                 <Route path="/cash-flow" element={<CashFlow />} />
                 <Route path="/receivables" element={<Receivables />} />
+                <Route path="/payables" element={<Payables />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/reports" element={<Reports />} />
               </Route>

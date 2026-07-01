@@ -119,6 +119,7 @@ export function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
       queryClient.invalidateQueries({ queryKey: ['profitability-data'] });
       queryClient.invalidateQueries({ queryKey: ['revenue-expenses-periods'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-breakdown'] });
       queryClient.invalidateQueries({ queryKey: ['financial-metrics'] });
       queryClient.invalidateQueries({ queryKey: ['cashflow-data'] });
       queryClient.invalidateQueries({ queryKey: ['period-comparison'] });
