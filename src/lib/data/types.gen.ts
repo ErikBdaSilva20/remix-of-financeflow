@@ -171,6 +171,20 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['budgets']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Database['public']['Tables']['budgets']['Insert']>;
       };
+
+      financial_goals: {
+        Row: {
+          id: string;
+          owner_id: string;
+          period_type: string; // month | quarter | year
+          period_key: string; // 2026-07 | 2026-Q3 | 2026
+          target_amount: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['financial_goals']['Row'], 'id' | 'owner_id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Database['public']['Tables']['financial_goals']['Insert']>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -40,6 +40,7 @@ const TABLES_WITH_OWNER = new Set<string>([
   'accounting_settings',
   'scheduled_reports',
   'budgets',
+  'financial_goals',
 ]);
 
 const LOOKUP_TABLES = new Set<string>([]);

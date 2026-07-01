@@ -208,6 +208,25 @@ create index if not exists idx_budgets_owner on budgets(owner_id);
 create or replace trigger trg_budgets_updated_at
   before update on budgets for each row execute function touch_updated_at();
 
+-- Metas financeiras (alvo de receita por instância de período).
+-- period_key identifica o período específico: '2026-07' (mês), '2026-Q3'
+-- (trimestre) ou '2026' (ano) — assim cada mês/trimestre/ano tem sua própria
+-- meta e o histórico é preservado.
+create table if not exists financial_goals (
+  id            uuid primary key default gen_random_uuid(),
+  owner_id      text not null references "user"(id) on delete cascade,
+  period_type   text not null,                       -- month | quarter | year
+  period_key    text not null,                       -- 2026-07 | 2026-Q3 | 2026
+  target_amount numeric(18,2) not null,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  constraint uq_financial_goals_owner_period_key unique (owner_id, period_type, period_key),
+  constraint chk_financial_goals_period check (period_type in ('month', 'quarter', 'year'))
+);
+create index if not exists idx_financial_goals_owner on financial_goals(owner_id);
+create or replace trigger trg_financial_goals_updated_at
+  before update on financial_goals for each row execute function touch_updated_at();
+
 -- Relatórios agendados (config apenas; a ENTREGA automática é cron = extensão Onda 2)
 create table if not exists scheduled_reports (
   id            uuid primary key default gen_random_uuid(),
