@@ -2,13 +2,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 import { EntryDialog } from '@/components/EntryDialog';
-import { RevenueDrillDownTable } from '@/components/RevenueDrillDownTable';
-import { RevenueProfitChart } from '@/components/RevenueProfitChart';
-import { TimePeriod, TimePeriodSelector } from '@/components/TimePeriodSelector';
+import { RevenueExpensesBarChart } from '@/components/RevenueExpensesBarChart';
 import { Badge } from '@/components/ui/badge';
 import { usePeriodComparison } from '@/hooks/usePeriodComparison';
-import { useRevenueDrillDown } from '@/hooks/useRevenueDrillDown';
-import { useRevenueProfitData } from '@/hooks/useRevenueProfitData';
+import { useRevenueExpensesPeriods } from '@/hooks/useRevenueExpensesPeriods';
 import { ArrowDownLeft, ArrowUpRight, DollarSign, Plus, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
@@ -16,51 +13,10 @@ const formatBRL = (amount: number) =>
   `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Overview() {
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
 
-  // Drill-down state for Revenue/Profit chart
-  const [drillDownParams, setDrillDownParams] = useState<{
-    startDate: string;
-    endDate: string;
-  } | null>(null);
-
-  const { data: drillDownData, isLoading: drillDownLoading } = useRevenueDrillDown(drillDownParams);
-
-  const { data: revenueProfitData } = useRevenueProfitData({});
-
-  const { data: periodComparison } = usePeriodComparison(selectedPeriod);
-
-  // Handle chart point click for drill-down
-  const handleChartPointClick = (dateKey: string) => {
-    // Determine the date range based on the dateKey format
-    let startDate: string;
-    let endDate: string;
-
-    if (dateKey.length === 7) {
-      // Monthly format (YYYY-MM)
-      const [year, month] = dateKey.split('-');
-      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-      startDate = `${year}-${month}-01`;
-      const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-      endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-    } else {
-      // Daily format (YYYY-MM-DD)
-      startDate = dateKey;
-      endDate = dateKey;
-    }
-
-    setDrillDownParams({ startDate, endDate });
-  };
-
-  const closeDrillDown = () => {
-    setDrillDownParams(null);
-  };
-  const periodNamesPt: Record<TimePeriod, string> = {
-    month: 'mês',
-    quarter: 'trimestre',
-    year: 'ano',
-  };
+  const { data: periodComparison } = usePeriodComparison('month');
+  const { data: revenueExpensesPeriods } = useRevenueExpensesPeriods();
 
   const formatGrowth = (growth: number | undefined) => {
     if (growth === undefined || !isFinite(growth)) return '0.0%';
@@ -71,23 +27,15 @@ export default function Overview() {
     <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
       {/* Main Content */}
       <div className="flex-1 space-y-4 md:space-y-6">
-        {/* Period Selector & Quick Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              className="bg-gradient-primary text-primary-foreground font-semibold"
-              onClick={() => setEntryDialogOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-1" /> Novo Lançamento
-            </Button>
-          </div>
-          <div className="flex justify-end">
-            <TimePeriodSelector
-              selectedPeriod={selectedPeriod}
-              onPeriodChange={setSelectedPeriod}
-            />
-          </div>
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            className="bg-gradient-primary text-primary-foreground font-semibold"
+            onClick={() => setEntryDialogOpen(true)}
+          >
+            <Plus className="w-4 h-4 mr-1" /> Novo Lançamento
+          </Button>
         </div>
 
         {/* Key Metrics with Growth Indicators */}
@@ -122,7 +70,7 @@ export default function Overview() {
                 )}
                 <span className="font-medium">{formatGrowth(periodComparison.growth.revenue)}</span>
                 <span className="text-muted-foreground hidden sm:inline">
-                  vs {periodNamesPt[selectedPeriod]} anterior
+                  vs mês anterior
                 </span>
               </div>
             )}
@@ -160,7 +108,7 @@ export default function Overview() {
                   {formatGrowth(periodComparison.growth.expenses)}
                 </span>
                 <span className="text-muted-foreground hidden sm:inline">
-                  vs {periodNamesPt[selectedPeriod]} anterior
+                  vs mês anterior
                 </span>
               </div>
             )}
@@ -196,33 +144,31 @@ export default function Overview() {
                 )}
                 <span className="font-medium">{formatGrowth(periodComparison.growth.profit)}</span>
                 <span className="text-muted-foreground hidden sm:inline">
-                  vs {periodNamesPt[selectedPeriod]} anterior
+                  vs mês anterior
                 </span>
               </div>
             )}
           </Card>
         </div>
 
-        {/* Revenue vs Profit Chart */}
-        <RevenueProfitChart
-          data={revenueProfitData || []}
-          formatCurrency={formatBRL}
-          onPointClick={handleChartPointClick}
-        />
-
-        {/* Drill-down table */}
-        {drillDownParams && (
-          <RevenueDrillDownTable
-            data={drillDownData || []}
-            title={`Transações - ${drillDownParams.startDate}${
-              drillDownParams.endDate !== drillDownParams.startDate
-                ? ` a ${drillDownParams.endDate}`
-                : ''
-            }`}
-            onClose={closeDrillDown}
-            isLoading={drillDownLoading}
+        {/* Receita vs. Despesas por período */}
+        <div className="space-y-4 md:space-y-6">
+          <RevenueExpensesBarChart
+            title="Receita vs. Despesas — Mês Atual"
+            data={revenueExpensesPeriods?.month || []}
+            formatCurrency={formatBRL}
           />
-        )}
+          <RevenueExpensesBarChart
+            title="Receita vs. Despesas — Trimestre Atual"
+            data={revenueExpensesPeriods?.quarter || []}
+            formatCurrency={formatBRL}
+          />
+          <RevenueExpensesBarChart
+            title="Receita vs. Despesas — Ano Atual"
+            data={revenueExpensesPeriods?.year || []}
+            formatCurrency={formatBRL}
+          />
+        </div>
 
         <Card className="p-4 md:p-6">
           <h3 className="text-base md:text-lg mb-3 md:mb-4">Últimas Transações</h3>
