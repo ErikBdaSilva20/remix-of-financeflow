@@ -1,6 +1,6 @@
 import type { Customer } from '@/lib/data/customers.repo';
 import type { Invoice } from '@/lib/data/invoices.repo';
-import type { Payment } from '@/lib/data/payments.repo';
+import type { Transaction } from '@/lib/data/transactions.repo';
 import type { VendorBill } from '@/lib/data/vendor_bills.repo';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -141,11 +141,12 @@ export function useRecentActivity() {
   return useQuery({
     queryKey: ['recent-activity'],
     queryFn: async () => {
-      const [invoices, payments, customers] = await Promise.all([
+      const [invoices, transactions, customers] = await Promise.all([
         fetchTable<Invoice>('invoices'),
-        fetchTable<Payment>('payments'),
+        fetchTable<Transaction>('transactions'),
         fetchTable<Customer>('customers'),
       ]);
+      const payments = transactions.filter((t) => t.type === 'income');
       const invMap = new Map(invoices.map((i) => [i.id, i.customer_id]));
       const custMap = new Map(customers.map((c) => [c.id, c.name]));
       const activities = [
@@ -227,7 +228,7 @@ export function useARDetailedData(
           return {
             id: inv.id,
             invoiceNumber: inv.id.slice(0, 8),
-            customer: custMap.get(inv.customer_id ?? '') || 'Unknown',
+            customer: custMap.get(inv.customer_id ?? '') || 'Cliente Desconhecido',
             issueDate: inv.issue_date,
             dueDate: inv.due_date,
             status: inv.status,

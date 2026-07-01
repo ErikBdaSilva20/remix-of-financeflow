@@ -44,7 +44,7 @@ const Reports = () => {
 
   const isLoading = metricsLoading || revenueLoading || expenseLoading;
 
-  const handleScheduleSubmit = async (data: Partial<ScheduledReportInput>) => {
+  const handleScheduleSubmit = async (data: ScheduledReportInput) => {
     try {
       if (editingSchedule) {
         updateScheduledReport.mutate({ id: editingSchedule.id, ...data });

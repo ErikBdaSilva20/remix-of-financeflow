@@ -4,13 +4,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAppDataPrefetch } from '@/hooks/infra/useAppDataPrefetch';
 import { useAuth } from '@/lib/auth';
 import { LogOut } from 'lucide-react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { FinancialSidebar } from './FinancialSidebar';
 import { ParticleBackground } from './ParticleBackground';
 
 export function DashboardLayout() {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   useAppDataPrefetch();
 

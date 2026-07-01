@@ -11,6 +11,13 @@ import { Pool, types } from 'pg';
 // sem isto os filtros por data quebram silenciosamente para qualquer linha vinda do banco.
 types.setTypeParser(1082, (val) => val);
 
+// node-postgres devolve colunas `numeric`/`decimal` (OID 1700) como string por
+// padrão (pra não perder precisão em valores arbitrariamente grandes). Como aqui
+// os `numeric(18,2)` são valores monetários usados em aritmética e gráficos no
+// front, devolvê-los como string faz `0 + "5000.00"` virar concatenação
+// ("05000.00"). parseFloat é seguro na faixa 18,2 usada para exibição.
+types.setTypeParser(1700, (val) => (val === null ? null : parseFloat(val)));
+
 const scryptAsync = promisify(scrypt);
 
 const app = new Hono();
@@ -24,12 +31,9 @@ const sessions = new Map<string, string>();
 
 // ── Tabelas específicas do FinanceFlow ────────────────────────────────────────
 const TABLES_WITH_OWNER = new Set<string>([
-  'bank_transactions',
   'customers',
-  'contacts',
   'invoices',
-  'payments',
-  'expenses_new',
+  'transactions',
   'vendors',
   'vendor_bills',
   'filter_segments',
@@ -38,7 +42,7 @@ const TABLES_WITH_OWNER = new Set<string>([
   'budgets',
 ]);
 
-const LOOKUP_TABLES = new Set<string>(['fx_rates']);
+const LOOKUP_TABLES = new Set<string>([]);
 
 const ALL_TABLES = new Set<string>();
 TABLES_WITH_OWNER.forEach((t) => ALL_TABLES.add(t));

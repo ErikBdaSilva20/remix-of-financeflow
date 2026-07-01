@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listBudgets, createBudget, updateBudget, type Budget } from "@/lib/data/budgets.repo";
+import { listBudgets, createBudget, updateBudget } from "@/lib/data/budgets.repo";
 import { toast } from "sonner";
 import {
   Dialog,

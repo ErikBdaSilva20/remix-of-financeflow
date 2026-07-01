@@ -60,7 +60,7 @@ export const CheckmarkIcon: React.FC<CustomIconProps> = ({ size, color, classNam
   </svg>
 );
 
-export const StackedDatabaseIcon: React.FC<CustomIconProps> = ({ size, color, className }) => (
+export const StackedDatabaseIcon: React.FC<CustomIconProps> = ({ size, className }) => (
   <div className={cn("relative", customIconVariants({ size }), className)}>
     <svg className="w-full h-full text-neutral-300" viewBox="0 0 16 16" fill="none">
       <path d="M12.74 5.167L8.26 2.57C8.1 2.477 7.9 2.477 7.74 2.57L3.26 5.167C3.1 5.26 3 5.432 3 5.617V10.811C3 10.997 3.1 11.169 3.26 11.262L7.74 13.859C7.82 13.905 7.91 13.929 8 13.929C8.09 13.929 8.18 13.906 8.26 13.859L12.74 11.262C12.9 11.169 13 10.997 13 10.811V5.617C13 5.432 12.9 5.26 12.74 5.167ZM8 3.621L11.44 5.617L8 7.614L4.56 5.618L8 3.621ZM8.52 12.507V8.515L11.96 6.519V10.511L8.52 12.507Z" fill="currentColor"/>

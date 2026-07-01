@@ -16,7 +16,7 @@ export interface ARInvoice {
   invoiceNumber: string;
   customer: string;
   issueDate: string;
-  dueDate: string;
+  dueDate: string | null;
   status: string;
   amount: number;
   currency: string;
@@ -110,7 +110,7 @@ export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPage
             <div className="text-sm font-medium truncate">{invoice.customer}</div>
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Emissão: {new Date(invoice.issueDate).toLocaleDateString('pt-BR')}</span>
-              <span>Venc.: {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span>
+              <span>Venc.: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('pt-BR') : '—'}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <Badge variant={getAgingBadge(invoice.agingBucket)} className="text-xs">
@@ -152,7 +152,7 @@ export function ARTable({ data, formatCurrency, page = 1, totalPages = 1, onPage
                 <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
                 <TableCell>{invoice.customer}</TableCell>
                 <TableCell>{new Date(invoice.issueDate).toLocaleDateString()}</TableCell>
-                <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                <TableCell>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '—'}</TableCell>
                 <TableCell>
                   {onStatusChange ? (
                     <Select

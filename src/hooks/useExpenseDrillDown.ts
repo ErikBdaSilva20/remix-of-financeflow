@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { fetchTable } from "./infra/tableCache";
-import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
+import type { Transaction } from "@/lib/data/transactions.repo";
 
 export interface ExpenseDrillDownData {
   filterType: "category" | "period";
@@ -22,9 +22,10 @@ export function useExpenseDrillDown(dateRange?: { from?: Date; to?: Date }) {
     queryKey: ["expense-drill-down", drillDownRequest, dateRange?.from, dateRange?.to],
     queryFn: async () => {
       if (!drillDownRequest) return null;
-      const expenses = await fetchTable<ExpenseNew>('expenses_new');
+      const allTransactions = await fetchTable<Transaction>('transactions');
+      const expenses = allTransactions.filter((t) => t.type === 'expense');
 
-      let filtered: ExpenseNew[];
+      let filtered: Transaction[];
       if (drillDownRequest.type === "category") {
         const fromStr = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
         const toStr = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
@@ -48,7 +49,7 @@ export function useExpenseDrillDown(dateRange?: { from?: Date; to?: Date }) {
       const transactions = filtered
         .sort((a, b) => b.date.localeCompare(a.date))
         .slice(0, 200)
-        .map(e => ({ date: format(new Date(e.date), "MMM dd, yyyy"), dateKey: e.date, description: e.vendor || e.category || "Expense", amount: e.amount, category: e.category ?? undefined }));
+        .map(e => ({ date: format(new Date(e.date), "MMM dd, yyyy"), dateKey: e.date, description: e.vendor || e.category || "Expense", amount: Number(e.amount) || 0, category: e.category ?? undefined }));
 
       if (drillDownRequest.type === "category") return { filterType: "category", category: drillDownRequest.category, data: transactions };
       return { filterType: "period", periodLabel: drillDownRequest.label, data: transactions };

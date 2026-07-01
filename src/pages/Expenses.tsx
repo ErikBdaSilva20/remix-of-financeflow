@@ -19,7 +19,6 @@ import { useExpenseDrillDown } from '@/hooks/useExpenseDrillDown';
 import {
   useExpenseCategories,
   useExpenseTrends,
-  useFinancialMetrics,
   useVendors,
 } from '@/hooks/useFinancialData';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
@@ -45,7 +44,6 @@ const Expenses = () => {
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   const [vendorPage, setVendorPage] = useState(1);
   const vendorsPerPage = 5;
-  const { data: metrics } = useFinancialMetrics();
   const { data: expenseCategories } = useExpenseCategories();
   const { data: expenseTrendData } = useExpenseTrends();
   const { data: vendors } = useVendors();
@@ -64,11 +62,6 @@ const Expenses = () => {
   const startIndex = (vendorPage - 1) * vendorsPerPage;
   const endIndex = startIndex + vendorsPerPage;
   const paginatedVendors = vendors?.slice(startIndex, endIndex) || [];
-
-  // Helper function to get metric by type
-  const getMetric = (type: string) => {
-    return metrics?.find((m) => m.metric_type === type);
-  };
 
   const colorPalette = [
     '#FF6B6B',
@@ -98,8 +91,10 @@ const Expenses = () => {
     '#8338EC',
   ];
 
-  const expenses = getMetric('expenses');
   const totalExpenses = expenseCategories?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
+  // Dias reais do mês corrente (28/29/30/31) em vez de um divisor fixo em 31
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const totalBudget =
     expenseCategories?.reduce((sum, exp) => sum + (exp.budget_amount || 0), 0) || 0;
 
@@ -163,7 +158,7 @@ const Expenses = () => {
           />
           <MetricCard
             title="Gasto Médio Diário"
-            value={formatBRL(totalExpenses / 31)}
+            value={formatBRL(totalExpenses / daysInMonth)}
             // change={expenses ? "+1.8% vs last month" : undefined}
             changeType="negative"
             icon={<AlertTriangle className="w-6 h-6 text-secondary" />}

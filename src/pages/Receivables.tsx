@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import {
   useAPData,
   useAPDetailedData,
@@ -38,7 +37,6 @@ const formatBRL = (amount: number) =>
 
 const Receivables = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { toast } = useToast();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
@@ -70,8 +68,8 @@ const Receivables = () => {
     updateStatusMutation.mutate({ invoiceId, status: newStatus });
   };
 
-  const { data: arData, isLoading: arLoading } = useARData({});
-  const { data: apData, isLoading: apLoading } = useAPData({});
+  const { data: arData } = useARData({});
+  const { data: apData } = useAPData({});
   const { data: dso } = useDSO();
   const { data: recentActivity, isLoading: activityLoading } = useRecentActivity();
   const { data: arDetailedResult, isLoading: arDetailedLoading } = useARDetailedData(
@@ -93,8 +91,7 @@ const Receivables = () => {
 
     if (invoiceId) {
       setHighlightedId(invoiceId);
-      toast({
-        title: 'Fatura Encontrada',
+      toast('Fatura Encontrada', {
         description: 'Exibindo detalhes da fatura',
       });
       // Scroll to the activity section
@@ -105,8 +102,7 @@ const Receivables = () => {
       }, 500);
     } else if (paymentId) {
       setHighlightedId(paymentId);
-      toast({
-        title: 'Pagamento Encontrado',
+      toast('Pagamento Encontrado', {
         description: 'Exibindo detalhes do pagamento',
       });
       setTimeout(() => {
@@ -115,8 +111,7 @@ const Receivables = () => {
           ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 500);
     } else if (customerId) {
-      toast({
-        title: 'Filtro de Cliente Aplicado',
+      toast('Filtro de Cliente Aplicado', {
         description: 'Exibindo transações para o cliente selecionado',
       });
     }
@@ -128,7 +123,7 @@ const Receivables = () => {
         setHighlightedId(null);
       }, 3000);
     }
-  }, [searchParams, setSearchParams, toast]);
+  }, [searchParams, setSearchParams]);
 
   const bucketNamesPt: Record<string, string> = {
     'Current (0-30 days)': 'No Prazo (0-30 dias)',
@@ -150,11 +145,17 @@ const Receivables = () => {
   };
 
   const statusNamesPt: Record<string, string> = {
-    paid: 'Pago',
-    completed: 'Concluído',
-    pending: 'Pendente',
-    overdue: 'Atrasado'
+    Paid: 'Pago',
+    Received: 'Recebido',
+    PrepaidPending: 'Pré-pago Pendente',
+    Open: 'Aberto',
+    Partial: 'Parcial',
+    'Partially Paid': 'Parcialmente Pago',
+    Overdue: 'Atrasado',
   };
+
+  // Status que representam dinheiro recebido → badge verde/primário
+  const paidStatuses = new Set(['Paid', 'Received', 'PrepaidPending']);
 
   const avgCollectionPeriod = arData?.averageCollectionPeriod
     ? `${Math.round(arData.averageCollectionPeriod)} dias`
@@ -480,15 +481,15 @@ const Receivables = () => {
                     </p>
                     <Badge
                       variant={
-                        activity.status === 'paid' || activity.status === 'completed'
+                        paidStatuses.has(activity.status ?? '')
                           ? 'default'
-                          : activity.status === 'pending'
-                            ? 'secondary'
-                            : 'outline'
+                          : activity.status === 'Overdue'
+                            ? 'destructive'
+                            : 'secondary'
                       }
                       className="text-xs"
                     >
-                      {statusNamesPt[activity.status] || activity.status}
+                      {statusNamesPt[activity.status ?? ''] || activity.status}
                     </Badge>
                   </div>
                 </div>

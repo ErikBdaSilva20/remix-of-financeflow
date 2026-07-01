@@ -2,7 +2,6 @@ import { MarginTrendsChart } from '@/components/MarginTrendsChart';
 import { MetricCard } from '@/components/MetricCard';
 import { ProfitWaterfallChart } from '@/components/ProfitWaterfallChart';
 import { ProfitabilityDataTable } from '@/components/ProfitabilityDataTable';
-import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -14,7 +13,7 @@ import {
 } from '@/hooks/useProfitabilityData';
 import { useProfitabilityDrillDown } from '@/hooks/useProfitabilityDrillDown';
 import { DollarSign, Percent, PieChart, Target, TrendingDown, TrendingUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 const formatBRL = (amount: number) =>
   `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
