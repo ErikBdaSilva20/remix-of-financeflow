@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { fetchTable } from "./infra/tableCache";
-import type { BankTransaction } from "@/lib/data/bank_transactions.repo";
+import type { Transaction } from "@/lib/data/transactions.repo";
 
 export interface CashFlowDrillDownData {
   period: string;
@@ -28,21 +28,38 @@ export function useCashFlowDrillDown() {
         startDate = endDate = drillDownRequest.dateKey;
       }
 
-      const all = await fetchTable<BankTransaction>('bank_transactions');
-      const filtered = all.filter(t => t.date >= startDate && t.date <= endDate)
-        .sort((a, b) => b.date.localeCompare(a.date));
+      const allTransactions = await fetchTable<Transaction>('transactions');
+      const payments = allTransactions.filter((t) => t.type === 'income');
+      const expenses = allTransactions.filter((t) => t.type === 'expense');
+
+      const inflows = payments
+        .filter((p) => p.date >= startDate && p.date <= endDate)
+        .map((p) => ({
+          date: format(new Date(p.date), 'MMM dd, yyyy'),
+          dateKey: p.date,
+          description: 'Pagamento recebido',
+          amount: Math.abs(Number(p.amount || 0)),
+          type: 'inflow' as const,
+          category: undefined,
+        }));
+
+      const outflows = expenses
+        .filter((e) => e.date >= startDate && e.date <= endDate)
+        .map((e) => ({
+          date: format(new Date(e.date), 'MMM dd, yyyy'),
+          dateKey: e.date,
+          description: e.vendor || e.category || 'Despesa',
+          amount: Math.abs(Number(e.amount || 0)),
+          type: 'outflow' as const,
+          category: e.category ?? undefined,
+        }));
+
+      const data = [...inflows, ...outflows].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
 
       return {
         period: drillDownRequest.period,
         dateKey: drillDownRequest.dateKey,
-        data: filtered.map(t => ({
-          date: format(new Date(t.date), 'MMM dd, yyyy'),
-          dateKey: t.date,
-          description: t.counterparty || t.category || 'Transaction',
-          amount: Math.abs(t.amount),
-          type: t.type === 'in' ? 'inflow' : 'outflow',
-          category: t.category ?? undefined,
-        })),
+        data,
       };
     },
     enabled: !!drillDownRequest,

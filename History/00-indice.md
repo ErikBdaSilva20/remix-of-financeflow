@@ -29,6 +29,11 @@ e os arquivos tocados.
    — Tela de Fluxo de Caixa trocou o gráfico de linha por cards de comparação
    mês a mês (Jan-Dez), e depois passou a focar por padrão no mês atual + mês
    anterior, com o ano completo disponível sob demanda.
+8. [08-remocao-tabelas-mortas-e-unificacao-transactions.md](08-remocao-tabelas-mortas-e-unificacao-transactions.md)
+   — Removidas as tabelas mortas `contacts`, `bank_transactions` e `fx_rates`
+   (Cash Flow reescrito para usar `payments`+`expenses_new`); depois essas duas
+   foram fundidas numa única tabela `transactions` (`type: income|expense`),
+   com `setup.sql` reescrito do zero sem os patches incrementais soltos.
 
 ## O que **não** está documentado aqui
 

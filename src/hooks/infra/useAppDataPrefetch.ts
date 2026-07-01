@@ -8,9 +8,8 @@ import {
   useTopClients,
   useVendors,
 } from "../useFinancialData";
-import { useContacts } from "../useContacts";
 import { usePeriodComparison } from "../usePeriodComparison";
-import { useRevenueProfitData } from "../useRevenueProfitData";
+import { useRevenueExpensesPeriods } from "../useRevenueExpensesPeriods";
 import { useARData, useAPData, useDSO, useRecentActivity } from "../useReceivablesData";
 
 import { startOfMonth, endOfMonth, subMonths } from "date-fns";
@@ -29,9 +28,8 @@ export function useAppDataPrefetch() {
   useExpenseTrends(defaultDateRange);
   useTopClients();
   useVendors(defaultDateRange);
-  useContacts();
   usePeriodComparison("month");
-  useRevenueProfitData();
+  useRevenueExpensesPeriods();
   useARData();
   useAPData();
   useDSO();

@@ -9,9 +9,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InvoiceForm } from "@/components/InvoiceDialog";
 import { ExpenseForm } from "@/components/ExpenseDialog";
-import { TransactionForm } from "@/components/TransactionDialog";
 
-type EntrySection = "revenue" | "expense" | "transaction";
+type EntrySection = "revenue" | "expense";
 
 interface EntryDialogProps {
   open: boolean;
@@ -36,15 +35,14 @@ export function EntryDialog({ open, onOpenChange, defaultSection = "revenue" }: 
         <DialogHeader>
           <DialogTitle>Novo Lançamento</DialogTitle>
           <DialogDescription>
-            Registre uma fatura, uma despesa ou uma transação bancária
+            Registre uma fatura ou uma despesa
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={section} onValueChange={(v) => setSection(v as EntrySection)}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="revenue">Fatura / Receita</TabsTrigger>
             <TabsTrigger value="expense">Despesa</TabsTrigger>
-            <TabsTrigger value="transaction">Transação Bancária</TabsTrigger>
           </TabsList>
 
           <TabsContent value="revenue">
@@ -52,9 +50,6 @@ export function EntryDialog({ open, onOpenChange, defaultSection = "revenue" }: 
           </TabsContent>
           <TabsContent value="expense">
             <ExpenseForm onSuccess={close} onCancel={close} />
-          </TabsContent>
-          <TabsContent value="transaction">
-            <TransactionForm onSuccess={close} onCancel={close} />
           </TabsContent>
         </Tabs>
       </DialogContent>

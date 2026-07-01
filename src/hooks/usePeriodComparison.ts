@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, subMonths, subQuarters, subYears, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from "date-fns";
 import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
-import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
+import type { Transaction } from "@/lib/data/transactions.repo";
 import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
 
 export type TimePeriod = 'month' | 'quarter' | 'year';
@@ -25,10 +25,11 @@ export function usePeriodComparison(period: TimePeriod) {
       else { cS = startOfYear(now); cE = endOfYear(now); pS = startOfYear(subYears(now, 1)); pE = endOfYear(subYears(now, 1)); }
 
       const fd = (d: Date) => format(d, 'yyyy-MM-dd');
-      const [invoices, expenses] = await Promise.all([
+      const [invoices, transactions] = await Promise.all([
         fetchTable<Invoice>('invoices'),
-        fetchTable<ExpenseNew>('expenses_new'),
+        fetchTable<Transaction>('transactions'),
       ]);
+      const expenses = transactions.filter((t) => t.type === 'expense');
 
       const sumInv = (s: string, e: string) => invoices.filter(i => i.issue_date >= s && i.issue_date <= e && isRealizedInvoice(i)).reduce((a, i) => a + Number(i.amount_total || 0), 0);
       const sumExp = (s: string, e: string) => expenses.filter(x => x.date >= s && x.date <= e).reduce((a, x) => a + Number(x.amount || 0), 0);

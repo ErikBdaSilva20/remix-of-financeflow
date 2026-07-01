@@ -2,13 +2,12 @@ import { CashFlowDataTable } from '@/components/CashFlowDataTable';
 import { MetricCard } from '@/components/MetricCard';
 import { Card } from '@/components/ui/card';
 import { useCashFlowDrillDown } from '@/hooks/useCashFlowDrillDown';
-import { listBankTransactions } from '@/lib/data/bank_transactions.repo';
+import { listTransactions } from '@/lib/data/transactions.repo';
 import { useQuery } from '@tanstack/react-query';
 import { parseISO } from 'date-fns';
-import { Banknote, ChevronLeft, ChevronRight, DollarSign, Plus, TrendingDown, TrendingUp } from 'lucide-react';
+import { Banknote, ChevronLeft, ChevronRight, DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { TransactionDialog } from '@/components/TransactionDialog';
 
 const formatBRL = (amount: number) =>
   `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -35,7 +34,6 @@ const actualCurrentYear = new Date().getFullYear();
 const actualCurrentMonthIndex = new Date().getMonth();
 
 const CashFlow = () => {
-  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [year, setYear] = useState(actualCurrentYear);
   // Padrão: foca só no mês atual (com o anterior pra comparação). O ano
   // completo é carregado/renderizado só quando o usuário pede ("sob demanda").
@@ -53,7 +51,13 @@ const CashFlow = () => {
   const { data: cashflowData } = useQuery({
     queryKey: ['cashflow-data', year],
     queryFn: async () => {
-      const allTxns = await listBankTransactions();
+      const transactions = await listTransactions();
+
+      // Caixa real: pagamentos recebidos (entrada) e despesas (saída)
+      const allTxns = [
+        ...transactions.filter((t) => t.type === 'income').map((p) => ({ date: p.date, amount: Math.abs(Number(p.amount || 0)) })),
+        ...transactions.filter((t) => t.type === 'expense').map((e) => ({ date: e.date, amount: -Math.abs(Number(e.amount || 0)) })),
+      ];
 
       // Saldo/fluxo "vida toda" — independe do ano selecionado no comparativo mensal
       const totals = allTxns.reduce(
@@ -176,10 +180,6 @@ const CashFlow = () => {
             Monitore entradas e saídas de caixa para manter liquidez saudável
           </p>
         </div>
-        <Button onClick={() => setTransactionDialogOpen(true)} className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 sm:mr-2" />
-          <span className="hidden sm:inline">Nova Transação</span>
-        </Button>
       </div>
 
       {/* Key Metrics */}
@@ -317,11 +317,6 @@ const CashFlow = () => {
           formatCurrency={formatBRL}
         />
       )}
-
-      <TransactionDialog
-        open={transactionDialogOpen}
-        onOpenChange={setTransactionDialogOpen}
-      />
     </div>
   );
 };

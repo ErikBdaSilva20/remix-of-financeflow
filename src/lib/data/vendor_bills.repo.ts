@@ -21,26 +21,12 @@ export interface PayVendorBillInput {
 }
 
 /**
- * Quita (total ou parcialmente) uma conta a pagar:
- *  1. lança uma transação bancária de saída (cash out)
- *  2. abate o valor pago do open_amount da conta e ajusta o status
+ * Quita (total ou parcialmente) uma conta a pagar: abate o valor pago do
+ * open_amount da conta e ajusta o status.
  *
  * Sem get-by-id no modo genérico: faz list-then-find (§B5 do Importantdoc).
  */
 export async function payVendorBill(input: PayVendorBillInput): Promise<void> {
-  // 1. Transação bancária (saída de caixa real)
-  await db.table('bank_transactions').create({
-    date: input.date,
-    amount: input.amount,
-    original_amount: input.amount,
-    original_currency: input.currency,
-    type: 'out',
-    counterparty: input.vendor,
-    category: input.category || 'AP Payment',
-    description: `Pagamento de Fatura #${input.billNumber}`,
-  });
-
-  // 2. Atualiza a conta a pagar
   const allBills = await listVendorBills();
   const currentBill = allBills.find((b) => b.id === input.billId);
   if (!currentBill) return;

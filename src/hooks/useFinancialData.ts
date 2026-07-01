@@ -2,9 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fetchTable } from "./infra/tableCache";
 import type { Invoice } from "@/lib/data/invoices.repo";
-import type { ExpenseNew } from "@/lib/data/expenses_new.repo";
+import type { Transaction } from "@/lib/data/transactions.repo";
 import type { Budget } from "@/lib/data/budgets.repo";
-import type { Payment } from "@/lib/data/payments.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 import type { VendorBill } from "@/lib/data/vendor_bills.repo";
 import { useAccountingSettings } from "./useAccountingSettings";
@@ -160,10 +159,11 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
     queryKey: ["expense-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
       // Fetch expenses (required) and budgets (optional — table may not exist yet)
-      const [expenses, budgets] = await Promise.all([
-        fetchTable<ExpenseNew>('expenses_new'),
+      const [transactions, budgets] = await Promise.all([
+        fetchTable<Transaction>('transactions'),
         fetchTable<Budget>('budgets').catch(() => [] as Budget[]),
       ]);
+      const expenses = transactions.filter((t) => t.type === 'expense');
       const filtered = filterByDateRange(expenses, 'date', dateRange);
 
       const grouped: Record<string, { amount: number; budget: number }> = {};
@@ -198,7 +198,8 @@ export function useExpenseTrends(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["expense-trends", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const expenses = await fetchTable<ExpenseNew>('expenses_new');
+      const transactions = await fetchTable<Transaction>('transactions');
+      const expenses = transactions.filter((t) => t.type === 'expense');
       const filtered = filterByDateRange(expenses, 'date', dateRange);
       if (filtered.length === 0) return [];
 
@@ -227,10 +228,11 @@ export function useRevenueTrends(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["revenue-trends", dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const [invoices, payments] = await Promise.all([
+      const [invoices, transactions] = await Promise.all([
         fetchTable<Invoice>('invoices'),
-        fetchTable<Payment>('payments'),
+        fetchTable<Transaction>('transactions'),
       ]);
+      const payments = transactions.filter((t) => t.type === 'income');
       const filteredInv = filterByDateRange(invoices, 'issue_date', dateRange).filter(isRealizedInvoice);
       const filteredPmt = filterByDateRange(payments, 'date', dateRange);
 

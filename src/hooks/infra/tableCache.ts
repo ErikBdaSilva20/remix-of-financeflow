@@ -5,7 +5,7 @@ import { db } from "@/lib/data/client";
 // Vários hooks de cálculo (receita, despesas, comparativo de período, etc.) leem
 // a MESMA tabela bruta no mesmo render. Como cada um tem seu próprio queryKey no
 // React Query, sem isto o React Query dispararia uma request HTTP por hook — no
-// Overview, `invoices` era buscada 4x e `expenses_new` 3x num único carregamento.
+// Overview, `invoices` era buscada 4x e `transactions` 3x num único carregamento.
 //
 // Enquanto um .list() está em andamento, novas chamadas reaproveitam a mesma
 // Promise. Assim que resolve (ou falha), o slot é liberado: NÃO há cache
