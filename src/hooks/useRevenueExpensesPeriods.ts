@@ -35,15 +35,16 @@ export function useRevenueExpensesPeriods() {
       const today = new Date();
       const currentYear = today.getFullYear();
       const currentMonth = today.getMonth();
-      const currentDay = today.getDate();
 
-      // Mês atual: um ponto por dia, do dia 1 até hoje
-      const month: PeriodPoint[] = [];
-      for (let day = 1; day <= currentDay; day++) {
+      // Mês atual: fluxo ACUMULADO de entradas e saídas ao longo dos dias do mês
+      // (quanto já entrou/saiu neste mês) — não é comparação com o mês anterior.
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const monthDaily: PeriodPoint[] = [];
+      for (let day = 1; day <= daysInMonth; day++) {
         const d = new Date(currentYear, currentMonth, day);
-        month.push({ period: format(d, "dd"), dateKey: format(d, "yyyy-MM-dd"), revenue: 0, expenses: 0, revenueCount: 0, expensesCount: 0 });
+        monthDaily.push({ period: format(d, "dd"), dateKey: format(d, "yyyy-MM-dd"), revenue: 0, expenses: 0, revenueCount: 0, expensesCount: 0 });
       }
-      const monthByKey = new Map(month.map((p) => [p.dateKey, p]));
+      const monthByKey = new Map(monthDaily.map((p) => [p.dateKey, p]));
       realizedInv.forEach((inv) => {
         const p = monthByKey.get(inv.issue_date);
         if (p) { p.revenue += Number(inv.amount_total) || 0; p.revenueCount += 1; }
@@ -52,11 +53,17 @@ export function useRevenueExpensesPeriods() {
         const p = monthByKey.get(exp.date);
         if (p) { p.expenses += Number(exp.amount) || 0; p.expensesCount += 1; }
       });
+      // Transforma os totais diários em acumulados (running total)
+      let accR = 0, accX = 0, accRC = 0, accXC = 0;
+      const month: PeriodPoint[] = monthDaily.map((p) => {
+        accR += p.revenue; accX += p.expenses; accRC += p.revenueCount; accXC += p.expensesCount;
+        return { ...p, revenue: accR, expenses: accX, revenueCount: accRC, expensesCount: accXC };
+      });
 
-      // Trimestre atual: um ponto por mês, do início do trimestre até o mês atual
+      // Trimestre atual: comparação mês a mês dos 3 meses do trimestre
       const quarterStartMonth = startOfQuarter(today).getMonth();
       const quarter: PeriodPoint[] = [];
-      for (let m = quarterStartMonth; m <= currentMonth; m++) {
+      for (let m = quarterStartMonth; m <= quarterStartMonth + 2; m++) {
         const d = new Date(currentYear, m, 1);
         quarter.push({ period: format(d, "MMM"), dateKey: format(d, "yyyy-MM"), revenue: 0, expenses: 0, revenueCount: 0, expensesCount: 0 });
       }
