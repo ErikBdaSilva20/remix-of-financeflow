@@ -19,7 +19,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { db } from '@/lib/data/client';
 import type { Customer } from '@/lib/data/customers.repo';
-import { createExpenseNew } from '@/lib/data/expenses_new.repo';
+import { createTransaction } from '@/lib/data/transactions.repo';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -41,7 +41,10 @@ const CATEGORIES = [
 const today = () => new Date().toISOString().split('T')[0];
 
 const expenseSchema = z.object({
-  date: z.string().min(1, 'Data é obrigatória'),
+  date: z
+    .string()
+    .min(1, 'Data é obrigatória')
+    .refine((val) => val <= today(), 'Não é permitido registrar datas futuras'),
   amount: z.string().min(1, 'Valor é obrigatório'),
   original_currency: z.string().default('BRL'),
   category: z.string().min(1, 'Categoria é obrigatória'),
@@ -91,11 +94,14 @@ export function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
 
   const mutation = useMutation({
     mutationFn: (data: ExpenseFormData) =>
-      createExpenseNew({
+      createTransaction({
+        type: 'expense',
         date: data.date,
         amount: parseFloat(data.amount),
         original_amount: parseFloat(data.amount),
         original_currency: data.original_currency,
+        status: null,
+        invoice_id: null,
         category: data.category,
         vendor: data.vendor || null,
         description: data.description || null,
@@ -106,13 +112,13 @@ export function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         customer_id: linkedToCustomer && data.customer_id ? data.customer_id : null,
       }),
     onSuccess: () => {
-      // invalidar todas as queries que dependem de expenses_new
+      // invalidar todas as queries que dependem de transactions
       queryClient.invalidateQueries({ queryKey: ['expense-data'] });
       queryClient.invalidateQueries({ queryKey: ['expense-trends'] });
       queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
       queryClient.invalidateQueries({ queryKey: ['profitability-data'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-profit-data'] });
+      queryClient.invalidateQueries({ queryKey: ['revenue-expenses-periods'] });
       queryClient.invalidateQueries({ queryKey: ['financial-metrics'] });
       queryClient.invalidateQueries({ queryKey: ['cashflow-data'] });
       queryClient.invalidateQueries({ queryKey: ['period-comparison'] });
@@ -198,7 +204,7 @@ export function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
               <FormItem>
                 <FormLabel>Data *</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" max={today()} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

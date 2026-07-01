@@ -1,5 +1,7 @@
 import { CustomerDialog } from '@/components/CustomerDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -27,30 +29,47 @@ import { db } from '@/lib/data/client';
 import type { Customer } from '@/lib/data/customers.repo';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
 const today = () => new Date().toISOString().split('T')[0];
 
-const invoiceSchema = z.object({
-  customer_id: z.string().optional(),
-  issue_date: z
-    .string()
-    .min(1, 'A data de emissão é obrigatória')
-    .refine((val) => val >= today(), 'Não é permitido registrar datas no passado'),
-  due_date: z
-    .string()
-    .optional()
-    .refine((val) => !val || val >= today(), 'Não é permitido registrar datas no passado'),
-  has_due_date: z.boolean().default(false),
-  amount_total: z.string().min(1, 'O valor é obrigatório'),
-  original_currency: z.string().default('BRL'),
-  status: z.enum(['Paid', 'PrepaidPending']),
-  channel: z.string().optional(),
-  product_id: z.string().optional(),
-});
+const invoiceSchema = z
+  .object({
+    customer_id: z.string().optional(),
+    issue_date: z.string().min(1, 'A data de emissão é obrigatória'),
+    due_date: z
+      .string()
+      .optional()
+      .refine((val) => !val || val >= today(), 'Não é permitido registrar datas no passado'),
+    has_due_date: z.boolean().default(false),
+    amount_total: z.string().min(1, 'O valor é obrigatório'),
+    original_currency: z.string().default('BRL'),
+    status: z.enum(['Open', 'Paid', 'PrepaidPending']),
+    channel: z.string().optional(),
+    product_id: z.string().optional(),
+    // Data futura só é permitida quando o usuário confirma que é um recebimento
+    // adiantado — evita lançamentos acidentais como "2030" virarem receita real.
+    confirmAdvance: z.boolean().default(false),
+  })
+  .superRefine((data, ctx) => {
+    if (data.issue_date < today()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Não é permitido registrar datas no passado',
+        path: ['issue_date'],
+      });
+    } else if (data.issue_date > today() && !data.confirmAdvance) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Confirme abaixo que é um recebimento adiantado para usar uma data futura',
+        path: ['confirmAdvance'],
+      });
+    }
+  });
 
 type InvoiceFormData = z.infer<typeof invoiceSchema>;
 
@@ -80,11 +99,25 @@ export function InvoiceForm({ onSuccess, onCancel }: InvoiceFormProps) {
       has_due_date: false,
       amount_total: '',
       original_currency: 'BRL',
-      status: 'Paid',
+      status: 'Open',
       channel: '',
       product_id: '',
+      confirmAdvance: false,
     },
   });
+
+  const issueDateValue = form.watch('issue_date');
+  const confirmAdvance = form.watch('confirmAdvance');
+  const isFutureDate = issueDateValue > today();
+
+  // Data futura só faz sentido como recebimento adiantado — trava o status
+  // em "Pago Adiantado" assim que o usuário confirma, evitando um estado
+  // contraditório (ex: fatura "Aberta" datada em 2030).
+  useEffect(() => {
+    if (isFutureDate && confirmAdvance) {
+      form.setValue('status', 'PrepaidPending');
+    }
+  }, [isFutureDate, confirmAdvance, form]);
 
   const handleLinkedToggle = (linked: boolean) => {
     setLinkedToCustomer(linked);
@@ -101,7 +134,8 @@ export function InvoiceForm({ onSuccess, onCancel }: InvoiceFormProps) {
         issue_date: data.issue_date,
         due_date: hasDueDate && data.due_date ? data.due_date : null,
         amount_total: amountTotal,
-        open_amount: amountTotal,
+        // Fatura "Aberta" mantém o valor cheio a receber; realizada (Paid/PrepaidPending) já nasce quitada
+        open_amount: data.status === 'Open' ? amountTotal : 0,
         original_amount: amountTotal,
         original_currency: data.original_currency,
         status: data.status,
@@ -123,7 +157,7 @@ export function InvoiceForm({ onSuccess, onCancel }: InvoiceFormProps) {
       queryClient.invalidateQueries({ queryKey: ['revenue-by-product-trends'] });
       queryClient.invalidateQueries({ queryKey: ['revenue-drill-down'] });
       queryClient.invalidateQueries({ queryKey: ['period-comparison'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-profit-data'] });
+      queryClient.invalidateQueries({ queryKey: ['revenue-expenses-periods'] });
       // dashboard
       queryClient.invalidateQueries({ queryKey: ['top-clients'] });
       queryClient.invalidateQueries({ queryKey: ['profitability-data'] });
@@ -258,6 +292,36 @@ export function InvoiceForm({ onSuccess, onCancel }: InvoiceFormProps) {
             </div>
           </div>
 
+          {isFutureDate && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="space-y-2">
+                <p>
+                  Esta data de emissão é futura. Isso só é permitido para um{' '}
+                  <strong>recebimento adiantado</strong> — o status será travado em
+                  "Pago Adiantado".
+                </p>
+                <FormField
+                  control={form.control}
+                  name="confirmAdvance"
+                  render={({ field }) => (
+                    <FormItem className="space-y-1">
+                      <div className="flex flex-row items-center gap-2">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Confirmo que é um recebimento adiantado
+                        </FormLabel>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </AlertDescription>
+            </Alert>
+          )}
+
           <FormField
             control={form.control}
             name="amount_total"
@@ -278,17 +342,27 @@ export function InvoiceForm({ onSuccess, onCancel }: InvoiceFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={isFutureDate}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="Open">Aberta (a receber)</SelectItem>
                     <SelectItem value="Paid">Paga</SelectItem>
                     <SelectItem value="PrepaidPending">Pago Adiantado</SelectItem>
                   </SelectContent>
                 </Select>
+                {isFutureDate && (
+                  <p className="text-xs text-muted-foreground">
+                    Travado em "Pago Adiantado" por causa da data de emissão futura.
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )}

@@ -26,7 +26,10 @@ import { Button } from "@/components/ui/button";
 const today = () => new Date().toISOString().split("T")[0];
 
 const billPaymentSchema = z.object({
-  date: z.string().min(1, "A data do pagamento é obrigatória"),
+  date: z
+    .string()
+    .min(1, "A data do pagamento é obrigatória")
+    .refine((val) => val <= today(), "Não é permitido registrar datas futuras"),
   amount: z.string().min(1, "O valor é obrigatório"),
 });
 
@@ -116,7 +119,7 @@ export function BillPaymentDialog({ open, onOpenChange, bill }: BillPaymentDialo
                 <FormItem>
                   <FormLabel>Data do Pagamento</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" max={today()} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -35,7 +35,10 @@ const today = () => new Date().toISOString().split("T")[0];
 
 const billSchema = z.object({
   vendor_id: z.string().min(1, "O fornecedor é obrigatório"),
-  issue_date: z.string().min(1, "A data de emissão é obrigatória"),
+  issue_date: z
+    .string()
+    .min(1, "A data de emissão é obrigatória")
+    .refine((val) => val <= today(), "Não é permitido registrar datas futuras"),
   due_date: z.string().min(1, "A data de vencimento é obrigatória"),
   amount_total: z.string().min(1, "O valor é obrigatório"),
   category: z.string().optional().or(z.literal("")),
@@ -148,7 +151,7 @@ export function BillDialog({ open, onOpenChange }: BillDialogProps) {
                   <FormItem>
                     <FormLabel>Data de Emissão</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" max={today()} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -27,7 +27,10 @@ import { Button } from "@/components/ui/button";
 const today = () => new Date().toISOString().split("T")[0];
 
 const paymentSchema = z.object({
-  date: z.string().min(1, "A data do pagamento é obrigatória"),
+  date: z
+    .string()
+    .min(1, "A data do pagamento é obrigatória")
+    .refine((val) => val <= today(), "Não é permitido registrar datas futuras"),
   amount: z.string().min(1, "O valor é obrigatório"),
   original_currency: z.string().default("BRL"),
 });
@@ -59,13 +62,16 @@ export function PaymentDialog({ open, onOpenChange, invoice }: PaymentDialogProp
     },
   });
 
-  // Update default value when invoice changes
-  useState(() => {
-    if (invoice) {
+  // react-hook-form's defaultValues are captured once at mount, when `invoice` is
+  // still null (the dialog is mounted before the user ever picks a row). Re-sync
+  // the form explicitly whenever the dialog opens with an invoice.
+  useEffect(() => {
+    if (open && invoice) {
+      form.setValue("date", today());
       form.setValue("amount", String(invoice.amount));
       form.setValue("original_currency", invoice.currency);
     }
-  });
+  }, [open, invoice, form]);
 
   const onSubmit = async (data: PaymentFormData) => {
     if (!invoice) return;
@@ -74,8 +80,9 @@ export function PaymentDialog({ open, onOpenChange, invoice }: PaymentDialogProp
     try {
       const amountPaid = parseFloat(data.amount);
 
-      // 1. Create the payment record
-      await db.table("payments").create({
+      // 1. Create the income transaction (recebimento de fatura)
+      await db.table("transactions").create({
+        type: "income",
         invoice_id: invoice.id,
         date: data.date,
         amount: amountPaid,
@@ -141,7 +148,7 @@ export function PaymentDialog({ open, onOpenChange, invoice }: PaymentDialogProp
                 <FormItem>
                   <FormLabel>Data do Recebimento</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" max={today()} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
