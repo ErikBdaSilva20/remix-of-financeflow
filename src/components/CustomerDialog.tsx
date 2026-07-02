@@ -126,8 +126,8 @@ export function CustomerDialog({ open, onOpenChange, customer, onSuccess }: Cust
       onSuccess?.(result);
       onOpenChange(false);
     },
-    onError: (error: any) => {
-      const msg: string = error?.message || '';
+    onError: (error: Error) => {
+      const msg = error.message || '';
       if (/duplicate key|unique constraint/i.test(msg)) {
         toast.error('Já existe um cliente cadastrado com esse e-mail ou celular.');
         return;

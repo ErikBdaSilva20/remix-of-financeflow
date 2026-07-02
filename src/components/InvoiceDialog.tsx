@@ -148,8 +148,8 @@ export function InvoiceForm({ onSuccess, onCancel }: InvoiceFormProps) {
       invalidateRevenueQueries(queryClient);
       form.reset();
       onSuccess();
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Falha ao criar a fatura';
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Falha ao criar a fatura';
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
