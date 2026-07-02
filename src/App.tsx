@@ -24,7 +24,6 @@ const queryClient = new QueryClient({
       // Não refazer todas as requests só por focar a aba.
       refetchOnWindowFocus: false,
       // Retry inteligente: NÃO re-tentar erros 4xx do gateway (tabela vazia/
-      // não provisionada, auth) — eram eles que causavam o backoff de ~7s por
       // query quando o tenant não tinha dados. Só re-tenta falhas transitórias.
       retry: (failureCount, error) => {
         const msg = error instanceof Error ? error.message : '';
