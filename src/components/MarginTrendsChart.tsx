@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { MarginTrendTimeSeries } from '@/hooks/useProfitabilityData';
-import { Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface MarginTrendsChartProps {
   className?: string;
@@ -56,19 +56,20 @@ export function MarginTrendsChart({ className, data, onPointClick }: MarginTrend
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="4 4" stroke="var(--chart-grid)" vertical={false} />
                   <XAxis
                     dataKey="period"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }}
                     tickFormatter={(v) => `${v}%`}
                   />
-                  <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} />
+                  <ReferenceLine y={0} stroke="var(--color-border)" strokeWidth={1} />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="line" />
                   <Line

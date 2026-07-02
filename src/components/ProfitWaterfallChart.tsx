@@ -150,10 +150,10 @@ export function ProfitWaterfallChart({
                 x2={svgWidth - pad.right}
                 y1={yScale(v)}
                 y2={yScale(v)}
-                stroke="hsl(var(--border))"
+                stroke={v === 0 ? 'var(--color-border)' : 'var(--chart-grid)'}
                 strokeWidth={v === 0 ? 1.5 : 0.5}
                 strokeDasharray={v === 0 ? 'none' : '4 4'}
-                opacity={v === 0 ? 0.7 : 0.4}
+                opacity={v === 0 ? 0.7 : 0.5}
               />
             ))}
 
@@ -166,7 +166,7 @@ export function ProfitWaterfallChart({
                 textAnchor="end"
                 dominantBaseline="middle"
                 fontSize={11}
-                fill="hsl(var(--muted-foreground))"
+                fill="var(--color-muted-foreground)"
               >
                 {fmtTick(v)}
               </text>
@@ -199,7 +199,7 @@ export function ProfitWaterfallChart({
                       width={barW + 8}
                       height={barHeight + 8}
                       rx={8}
-                      fill="hsl(var(--muted))"
+                      fill="var(--color-muted)"
                       opacity={0.35}
                     />
                   )}
@@ -210,7 +210,7 @@ export function ProfitWaterfallChart({
                     x2={svgWidth}
                     y1={barY}
                     y2={barY}
-                    stroke="hsl(var(--muted-foreground))"
+                    stroke="var(--color-muted-foreground)"
                     strokeWidth={2}
                     opacity={isHovered ? 0.3 : 0.15}
                     style={{ transition: 'opacity 0.2s ease' }}
@@ -255,22 +255,12 @@ export function ProfitWaterfallChart({
                 y={svgHeight - pad.bottom + 22}
                 textAnchor="middle"
                 fontSize={12}
-                fill="hsl(var(--muted-foreground))"
+                fill="var(--color-muted-foreground)"
                 fontWeight={hoveredIndex === i ? 600 : 400}
               >
                 {step.name}
               </text>
             ))}
-
-            {/* Fine bottom border line */}
-            <line
-              x1={pad.left}
-              x2={svgWidth - pad.right}
-              y1={yScaleBaseline}
-              y2={yScaleBaseline}
-              stroke="hsl(var(--border))"
-              strokeWidth={1.5}
-            />
           </svg>
             </div>
           </div>

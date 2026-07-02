@@ -282,7 +282,7 @@ export function FlowChart({
                     <stop offset="100%" stopColor={CHART.expFill} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 6" vertical={false} stroke="oklch(0.92 0.01 255)" />
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--chart-grid)" />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'oklch(0.55 0.03 260)', fontSize: 12 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: 'oklch(0.55 0.03 260)', fontSize: 12 }} tickFormatter={(v) => `${v / 1000}k`} />
                 <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'oklch(0.9 0.01 255)' }} />

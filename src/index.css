@@ -35,6 +35,11 @@
 
     --card-hover: #F8FAFC;
 
+    /* Linhas de grade dos gráficos — mix do verde primário com a borda,
+       pra ficarem visíveis (não somem em cima do fundo claro) e combinarem
+       com o tema em vez de um cinza neutro genérico. */
+    --chart-grid: color-mix(in oklch, var(--color-primary) 28%, var(--color-border) 72%);
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, #06B6D4 0%, #10B981 100%);
     --gradient-secondary: linear-gradient(135deg, #ECFEFF 0%, #D1FAE5 100%);

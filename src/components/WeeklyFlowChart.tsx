@@ -53,7 +53,7 @@ export function WeeklyFlowChart({
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" opacity={0.4} vertical={false} />
+          <CartesianGrid strokeDasharray="4 4" stroke="var(--chart-grid)" vertical={false} />
           <XAxis
             dataKey="label"
             axisLine={false}
