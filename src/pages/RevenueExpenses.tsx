@@ -27,6 +27,7 @@ import { usePeriodComparison, type TimePeriod } from '@/hooks/usePeriodCompariso
 import { useARData, useARDetailedData } from '@/hooks/useReceivablesData';
 import { useRevenueExpensesPeriods } from '@/hooks/useRevenueExpensesPeriods';
 import { useWeeklyBreakdown } from '@/hooks/useWeeklyBreakdown';
+import { formatCurrency as formatBRL } from '@/lib/utils';
 import {
   AlertTriangle,
   Building,
@@ -42,9 +43,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-
-const formatBRL = (amount: number) =>
-  `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const periodLabel: Record<TimePeriod, string> = {
   month: 'este mês',
@@ -123,7 +121,7 @@ const RevenueExpenses = () => {
     clearDrillDown,
   } = useExpenseDrillDown({});
 
-  const getMetric = (type: string) => metrics?.find((m: any) => m.metric_type === type);
+  const getMetric = (type: string) => metrics?.find((m) => m.metric_type === type);
   const mrr = getMetric('mrr');
   const arr = getMetric('arr');
 

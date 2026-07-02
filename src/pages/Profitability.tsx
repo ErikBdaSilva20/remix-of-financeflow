@@ -17,6 +17,7 @@ import {
 } from '@/hooks/useProfitabilityData';
 import { useProfitabilityDrillDown } from '@/hooks/useProfitabilityDrillDown';
 import { listTransactions } from '@/lib/data/transactions.repo';
+import { formatCurrency as formatBRL } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { parseISO } from 'date-fns';
 import {
@@ -31,9 +32,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-
-const formatBRL = (amount: number) =>
-  `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const MONTH_LABELS = [
   'Janeiro',
@@ -68,13 +66,10 @@ const actualCurrentMonthIndex = new Date().getMonth();
 
 const Profitability = () => {
   // ---- Rentabilidade ----
-  const { data: profitabilityData, isLoading } = useProfitabilityData({
-    dateRange: {},
-    currency: 'BRL',
-  });
-  const profitBreakdown = useProfitBreakdown({ dateRange: {}, currency: 'BRL' });
-  const marginTrends = useMarginTrends({ dateRange: {}, currency: 'BRL' });
-  const { data: marginTrendsData } = useMarginTrendsTimeSeries({ dateRange: {}, currency: 'BRL' });
+  const { data: profitabilityData, isLoading } = useProfitabilityData({ dateRange: {} });
+  const profitBreakdown = useProfitBreakdown({ dateRange: {} });
+  const marginTrends = useMarginTrends({ dateRange: {} });
+  const { data: marginTrendsData } = useMarginTrendsTimeSeries({ dateRange: {} });
   const { drillDownData, handleWaterfallClick, handleMarginClick, clearDrillDown } =
     useProfitabilityDrillDown();
 
@@ -90,7 +85,6 @@ const Profitability = () => {
     'Gross Margin': 'Margem Bruta',
     'Operating Margin': 'Margem Operacional',
     'Net Margin': 'Margem Líquida',
-    'EBITDA Margin': 'Margem EBITDA',
   };
 
   // ---- Fluxo de Caixa ----

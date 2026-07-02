@@ -31,6 +31,7 @@ import {
   useRecentActivity,
 } from '@/hooks/useReceivablesData';
 import { db } from '@/lib/data/client';
+import { formatCurrency as formatBRL } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -45,9 +46,6 @@ import {
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-
-const formatBRL = (amount: number) =>
-  `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const bucketNamesPt: Record<string, string> = {
   'Current (0-30 days)': 'No Prazo (0-30 dias)',
