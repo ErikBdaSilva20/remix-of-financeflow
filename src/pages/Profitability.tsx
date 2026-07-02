@@ -68,7 +68,10 @@ const actualCurrentMonthIndex = new Date().getMonth();
 
 const Profitability = () => {
   // ---- Rentabilidade ----
-  const { data: profitabilityData, isLoading } = useProfitabilityData({ dateRange: {}, currency: 'BRL' });
+  const { data: profitabilityData, isLoading } = useProfitabilityData({
+    dateRange: {},
+    currency: 'BRL',
+  });
   const profitBreakdown = useProfitBreakdown({ dateRange: {}, currency: 'BRL' });
   const marginTrends = useMarginTrends({ dateRange: {}, currency: 'BRL' });
   const { data: marginTrendsData } = useMarginTrendsTimeSeries({ dateRange: {}, currency: 'BRL' });
@@ -95,8 +98,11 @@ const Profitability = () => {
   // Padrão: foca só no mês atual (com o anterior pra comparação). O ano
   // completo é carregado/renderizado só quando o usuário pede ("sob demanda").
   const [showFullYear, setShowFullYear] = useState(false);
-  const { drillDownData: cashFlowDrillDownData, handlePeriodClick, clearDrillDown: clearCashFlowDrillDown } =
-    useCashFlowDrillDown();
+  const {
+    drillDownData: cashFlowDrillDownData,
+    handlePeriodClick,
+    clearDrillDown: clearCashFlowDrillDown,
+  } = useCashFlowDrillDown();
 
   const toggleFullYear = () => {
     setShowFullYear((prev) => {
@@ -211,9 +217,6 @@ const Profitability = () => {
     : monthsWithData.length > 0
       ? monthsWithData.reduce((sum, m) => sum + m.outflow, 0) / monthsWithData.length
       : 0;
-
-  const runwayMonths =
-    monthlyBurnRate > 0 && currentCashBalance > 0 ? currentCashBalance / monthlyBurnRate : 0;
 
   const buildMonthCard = (i: number) => {
     const m = months[i];
@@ -492,7 +495,7 @@ const Profitability = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <MiniStatCard
             label={`Entradas de Caixa — ${year}`}
             value={`+${formatBRL(months.reduce((sum, m) => sum + m.inflow, 0))}`}
@@ -502,12 +505,6 @@ const Profitability = () => {
             label={`Saídas de Caixa — ${year}`}
             value={`-${formatBRL(months.reduce((sum, m) => sum + m.outflow, 0))}`}
             Icon={TrendingDown}
-          />
-          <MiniStatCard
-            label="Runway de Caixa"
-            value={runwayMonths > 0 ? `${runwayMonths.toFixed(1)} meses` : 'N/A'}
-            hint="com base no saldo atual"
-            Icon={Banknote}
           />
         </div>
 
