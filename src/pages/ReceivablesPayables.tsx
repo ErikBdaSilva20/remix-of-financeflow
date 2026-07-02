@@ -2,7 +2,6 @@ import { APTable, type APBillDetail } from '@/components/APTable';
 import { ARTable, type ARInvoice } from '@/components/ARTable';
 import { BillDialog } from '@/components/BillDialog';
 import { BillPaymentDialog } from '@/components/BillPaymentDialog';
-import { DonutChart } from '@/components/DonutChart';
 import { InvoiceDialog } from '@/components/InvoiceDialog';
 import { PaymentDialog } from '@/components/PaymentDialog';
 import { VendorDialog } from '@/components/VendorDialog';
@@ -15,7 +14,7 @@ import {
 } from '@/components/dashboard/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -32,22 +31,20 @@ import {
   useRecentActivity,
 } from '@/hooks/useReceivablesData';
 import { db } from '@/lib/data/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
-  Building2,
   CheckIcon,
   Clock,
   CreditCard,
   DollarSign,
-  FileText,
   HandCoins,
   Plus,
   Receipt,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const formatBRL = (amount: number) =>
   `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -58,6 +55,14 @@ const bucketNamesPt: Record<string, string> = {
   '60+ days overdue': 'Atrasado 60+ dias',
 };
 
+// Explica o que cada faixa significa — usado quando a faixa está vazia, pra
+// linha continuar servindo de legenda em vez de sumir ou mostrar R$ 0,00 à toa.
+const bucketMeaningPt: Record<string, string> = {
+  'Current (0-30 days)': 'Faturas dentro do prazo normal',
+  '30-60 days': 'Faturas atrasadas entre 30 e 60 dias',
+  '60+ days overdue': 'Faturas atrasadas há mais de 60 dias',
+};
+
 const badgeNamesPt: Record<string, string> = {
   Urgent: 'Urgente',
   Current: 'Próximos',
@@ -66,9 +71,17 @@ const badgeNamesPt: Record<string, string> = {
 };
 
 const groupNamesPt: Record<string, string> = {
+  'Past due': 'Vencido',
   'Due within 7 days': 'Vence em até 7 dias',
   'Due within 30 days': 'Vence em até 30 dias',
   'Due later': 'Vence depois',
+};
+
+const groupMeaningPt: Record<string, string> = {
+  'Past due': 'Contas que já passaram da data de pagamento',
+  'Due within 7 days': 'Contas que vencem nos próximos 7 dias',
+  'Due within 30 days': 'Contas que vencem entre 8 e 30 dias',
+  'Due later': 'Contas que vencem depois de 30 dias',
 };
 
 const statusNamesPt: Record<string, string> = {
@@ -175,8 +188,14 @@ const ReceivablesPayables = () => {
     ? `${Math.round(arData.averageCollectionPeriod)} dias`
     : 'N/A';
 
-  const hasAPData = apData && apData.total > 0;
+  // Faturas atrasadas (buckets 30-60 e 60+) — o que precisa de cobrança agora,
+  // em destaque no primeiro card do painel de Contas a Receber.
+  const overdueARBuckets = (arData?.buckets ?? []).filter((b) => b.bucket !== 'Current (0-30 days)');
+  const overdueARCount = overdueARBuckets.reduce((s, b) => s + b.count, 0);
+  const overdueARTotal = overdueARBuckets.reduce((s, b) => s + b.amount, 0);
+
   const hasDSOData = dso !== null && dso !== undefined;
+  const overdueGroup = apData?.groups.find((g) => g.badge === 'Overdue');
   const urgentGroup = apData?.groups.find((g) => g.badge === 'Urgent');
   const netPosition = (arData?.total ?? 0) - (apData?.total ?? 0);
 
@@ -184,22 +203,25 @@ const ReceivablesPayables = () => {
     {
       label: 'Recebíveis Pendentes',
       value: fmt0(arData?.total ?? 0),
+      hint: 'ainda não recebido',
       Icon: HandCoins,
     },
     {
       label: 'Contas a Pagar Pendentes',
       value: fmt0(apData?.total ?? 0),
+      hint: 'ainda não pago',
       Icon: Receipt,
     },
     {
       label: 'Saldo Líquido',
       value: fmt0(netPosition),
-      hint: 'a receber − a pagar',
+      hint: 'recebíveis − pagáveis em aberto',
       Icon: CreditCard,
     },
     {
       label: 'DSO (Prazo Médio de Recebimento)',
       value: hasDSOData ? `${dso} dias` : 'N/A',
+      hint: 'dias em média até receber',
       Icon: Clock,
     },
   ];
@@ -213,7 +235,8 @@ const ReceivablesPayables = () => {
             Contas a Receber &amp; a Pagar
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Faturas de clientes e obrigações com fornecedores em um só lugar.
+            Veja o que está prestes a vencer: faturas de clientes e contas de fornecedores que
+            ainda não foram pagas.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -248,26 +271,35 @@ const ReceivablesPayables = () => {
           tone="revenue"
           Icon={HandCoins}
           title="Contas a Receber"
-          subtitle="Faturas de clientes e recebimentos"
+          subtitle="Faturas de clientes ainda não pagas — priorize as mais atrasadas."
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <MiniStatCard
-              label="Faturas em Aberto"
-              value={String(arDetailedResult?.total ?? 0)}
-              Icon={FileText}
+              label="Faturas Vencidas"
+              value={String(overdueARCount)}
+              hint={overdueARCount > 0 ? formatBRL(overdueARTotal) : 'Nenhuma em atraso'}
+              Icon={AlertTriangle}
             />
             <MiniStatCard
               label="Prazo Médio de Recebimento"
               value={avgCollectionPeriod}
+              hint="tempo médio até o cliente pagar"
               Icon={Clock}
             />
           </div>
 
-          <Card className="rounded-3xl border-border/60 p-6 shadow-sm flex flex-col gap-4">
-            <h3 className="text-lg">Contas a Receber por Vencimento</h3>
-            {hasARData && arData?.buckets && arData.buckets.length > 0 ? (
+          <Card className="rounded-3xl border-border/60 shadow-sm">
+            <CardHeader className="p-6 pb-3">
+              <CardTitle className="text-base font-semibold">
+                Contas a Receber por Vencimento
+              </CardTitle>
+              <CardDescription>Quanto mais vencida, mais prioridade na cobrança.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 p-6 pt-0">
+            {arData?.buckets && arData.buckets.length > 0 ? (
               <div className="space-y-3">
                 {arData.buckets.map((bucket, index) => {
+                  const isEmpty = bucket.count === 0;
                   const iconColor =
                     index === 0 ? 'bg-green-100' : index === 1 ? 'bg-yellow-100' : 'bg-red-100';
                   const textColor =
@@ -280,29 +312,33 @@ const ReceivablesPayables = () => {
                   return (
                     <div
                       key={bucket.bucket}
-                      className="flex justify-between items-center p-3 bg-muted rounded-lg"
+                      className={`flex justify-between items-center p-3 rounded-lg ${isEmpty ? 'bg-muted/40' : 'bg-muted'}`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-8 h-8 ${iconColor} rounded-full flex items-center justify-center flex-shrink-0`}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isEmpty ? 'bg-muted' : iconColor}`}
                         >
-                          <Icon className={`w-4 h-4 ${textColor}`} />
+                          <Icon className={`w-4 h-4 ${isEmpty ? 'text-muted-foreground' : textColor}`} />
                         </div>
                         <div>
-                          <div className="font-medium text-sm">
+                          <div
+                            className={`font-medium text-sm ${isEmpty ? 'text-muted-foreground' : ''}`}
+                          >
                             {bucketNamesPt[bucket.bucket] || bucket.bucket}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {bucket.count} faturas
+                            {isEmpty ? bucketMeaningPt[bucket.bucket] : `${bucket.count} faturas`}
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-sm">{formatBRL(bucket.amount)}</div>
-                        <div className={`text-xs ${textColor}`}>
-                          {bucket.percentage.toFixed(0)}%
+                      {!isEmpty && (
+                        <div className="text-right">
+                          <div className="font-semibold text-sm">{formatBRL(bucket.amount)}</div>
+                          <div className={`text-xs ${textColor}`}>
+                            {bucket.percentage.toFixed(0)}%
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -312,25 +348,8 @@ const ReceivablesPayables = () => {
                 <Badge variant="secondary">Sem dados disponíveis</Badge>
               </div>
             )}
+            </CardContent>
           </Card>
-
-          {hasARData && arData?.buckets && arData.buckets.length > 0 && (
-            <DonutChart
-              title="Análise de Vencimento (Aging)"
-              data={arData.buckets.map((bucket, index) => ({
-                name: bucketNamesPt[bucket.bucket] || bucket.bucket,
-                value: bucket.amount,
-                color:
-                  index === 0
-                    ? 'hsl(142, 76%, 36%)'
-                    : index === 1
-                      ? 'hsl(45, 93%, 47%)'
-                      : 'hsl(0, 84%, 60%)',
-              }))}
-              centerValue={formatBRL(arData.total)}
-              centerLabel="Total a Receber"
-            />
-          )}
 
           <div className="space-y-2">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 px-1">
@@ -382,7 +401,7 @@ const ReceivablesPayables = () => {
           tone="expense"
           Icon={Receipt}
           title="Contas a Pagar"
-          subtitle="Fornecedores e obrigações de pagamento"
+          subtitle="Contas de fornecedores ainda não pagas — organize pelo que vence primeiro."
           action={
             <Button
               variant="outline"
@@ -397,9 +416,10 @@ const ReceivablesPayables = () => {
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <MiniStatCard
-              label="Contas em Aberto"
-              value={String(apDetailedData?.length ?? 0)}
-              Icon={Building2}
+              label="Contas Vencidas"
+              value={String(overdueGroup?.count ?? 0)}
+              hint={overdueGroup && overdueGroup.count > 0 ? formatBRL(overdueGroup.amount) : 'Nenhuma em atraso'}
+              Icon={AlertTriangle}
             />
             <MiniStatCard
               label="Vencendo em 7 dias"
@@ -409,13 +429,18 @@ const ReceivablesPayables = () => {
             />
           </div>
 
-          <Card className="rounded-3xl border-border/60 p-6 shadow-sm flex flex-col gap-4">
-            <h3 className="text-lg">Contas a Pagar por Urgência</h3>
-            {hasAPData && apData?.groups && apData.groups.length > 0 ? (
+          <Card className="rounded-3xl border-border/60 shadow-sm">
+            <CardHeader className="p-6 pb-3">
+              <CardTitle className="text-base font-semibold">Contas a Pagar por Urgência</CardTitle>
+              <CardDescription>O que já venceu aparece primeiro — pague isso antes.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 p-6 pt-0">
+            {apData?.groups && apData.groups.length > 0 ? (
               <div className="space-y-3">
                 {apData.groups.map((group) => {
+                  const isEmpty = group.count === 0;
                   const badgeVariant =
-                    group.badge === 'Urgent'
+                    group.badge === 'Overdue' || group.badge === 'Urgent'
                       ? 'destructive'
                       : group.badge === 'Current'
                         ? 'secondary'
@@ -423,20 +448,26 @@ const ReceivablesPayables = () => {
                   return (
                     <div
                       key={group.name}
-                      className="flex justify-between items-center p-3 bg-muted rounded-lg"
+                      className={`flex justify-between items-center p-3 rounded-lg ${isEmpty ? 'bg-muted/40' : 'bg-muted'}`}
                     >
                       <div>
-                        <div className="font-medium text-sm">
+                        <div
+                          className={`font-medium text-sm ${isEmpty ? 'text-muted-foreground' : ''}`}
+                        >
                           {groupNamesPt[group.name] || group.name}
                         </div>
-                        <div className="text-xs text-muted-foreground">{group.count} contas</div>
+                        <div className="text-xs text-muted-foreground">
+                          {isEmpty ? groupMeaningPt[group.name] : `${group.count} contas`}
+                        </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                        <div className="font-semibold text-sm">{formatBRL(group.amount)}</div>
-                        <Badge variant={badgeVariant} className="text-xs">
-                          {badgeNamesPt[group.badge] || group.badge}
-                        </Badge>
-                      </div>
+                      {!isEmpty && (
+                        <div className="text-right flex flex-col items-end gap-1">
+                          <div className="font-semibold text-sm">{formatBRL(group.amount)}</div>
+                          <Badge variant={badgeVariant} className="text-xs">
+                            {badgeNamesPt[group.badge] || group.badge}
+                          </Badge>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -446,25 +477,8 @@ const ReceivablesPayables = () => {
                 <Badge variant="secondary">Sem dados disponíveis</Badge>
               </div>
             )}
+            </CardContent>
           </Card>
-
-          {hasAPData && apData?.groups && apData.groups.length > 0 && (
-            <DonutChart
-              title="Urgência de Pagamento"
-              data={apData.groups.map((group) => ({
-                name: badgeNamesPt[group.name] || group.name,
-                value: group.amount,
-                color:
-                  group.badge === 'Urgent'
-                    ? 'hsl(0, 84%, 60%)'
-                    : group.badge === 'Current'
-                      ? 'hsl(221, 83%, 53%)'
-                      : 'hsl(240, 5%, 65%)',
-              }))}
-              centerValue={formatBRL(apData.total)}
-              centerLabel="Total a Pagar"
-            />
-          )}
 
           <div className="space-y-2">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 px-1">

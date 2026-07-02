@@ -88,6 +88,10 @@ export function useAPData(dateRange?: { from?: Date; to?: Date }) {
         })
         .sort((a, b) => a.due_date.localeCompare(b.due_date));
 
+      // Conta já vencida (daysUntilDue < 0) precisa do próprio grupo — antes ela
+      // não caía em nenhum dos 3 buckets abaixo e sumia do card/donut de urgência
+      // mesmo contando no `total`, escondendo justamente o item mais urgente.
+      const overdue = withDays.filter((b) => b.daysUntilDue < 0);
       const urgent = withDays.filter((b) => b.daysUntilDue <= 7 && b.daysUntilDue >= 0);
       const current = withDays.filter((b) => b.daysUntilDue > 7 && b.daysUntilDue <= 30);
       const future = withDays.filter((b) => b.daysUntilDue > 30);
@@ -96,6 +100,12 @@ export function useAPData(dateRange?: { from?: Date; to?: Date }) {
       return {
         total,
         groups: [
+          {
+            name: 'Past due',
+            count: overdue.length,
+            amount: overdue.reduce((s, b) => s + Number(b.open_amount || 0), 0),
+            badge: 'Overdue',
+          },
           {
             name: 'Due within 7 days',
             count: urgent.length,
