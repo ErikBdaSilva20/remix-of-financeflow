@@ -22,14 +22,9 @@ const scryptAsync = promisify(scrypt);
 
 const app = new Hono();
 
-const databaseUrl =
-  process.env.DATABASE_URL || 'postgresql://masia:masia_dev@localhost:5432/tenant_local';
-
 const pool = new Pool({
-  connectionString: databaseUrl,
-  // Neon exige TLS; node-postgres às vezes não valida a cadeia de CA corretamente
-  // via sslmode=require na connection string sozinha.
-  ssl: databaseUrl.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
+  connectionString:
+    process.env.DATABASE_URL || 'postgresql://masia:masia_dev@localhost:5432/tenant_local',
 });
 
 const sessions = new Map<string, string>();
@@ -82,22 +77,12 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   return expected.length === derived.length && timingSafeEqual(expected, derived);
 }
 
-// ── CORS (allowlist fixa + extra via env — não reflete Origin arbitrário) ────
-// Origin nunca vem com barra final no header enviado pelo browser — um valor
-// aqui com "/" no fim nunca bate com nada e o domínio fica silenciosamente
-// bloqueado.
-const EXTRA_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
-
+// ── CORS (allowlist fixa — não reflete Origin arbitrário) ────────────────────
 const ALLOWED_ORIGINS = new Set([
   'http://localhost:5173',
   'http://localhost:4173',
   'http://127.0.0.1:5173',
   'http://localhost:8080',
-  'https://remix-of-financeflow.vercel.app',
-  ...EXTRA_ORIGINS,
 ]);
 
 app.use('*', async (c, next) => {
@@ -109,7 +94,6 @@ app.use('*', async (c, next) => {
   c.header('Access-Control-Allow-Credentials', 'true');
   c.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
   c.header('Access-Control-Allow-Headers', 'Content-Type,X-Tenant-Id');
-  c.header('Vary', 'Origin');
   if (c.req.method === 'OPTIONS') return c.text('OK');
   await next();
 });
@@ -151,10 +135,7 @@ app.post('/auth/sign-up', async (c) => {
     setCookie(c, 'session', token, {
       httpOnly: true,
       secure: true,
-      // 'None' porque front (Vercel) e gateway rodam em domínios diferentes —
-      // 'Lax' bloqueia o cookie em requests cross-site mesmo com fetch(credentials:'include').
-      // Exige Secure:true, ok em produção (https) e em localhost (secure context mesmo por http).
-      sameSite: 'None',
+      sameSite: 'Lax',
       maxAge: 60 * 60 * 24 * 7,
     });
     return c.json({ id: user.id, name: user.name, email: user.email, role: 'admin' });
@@ -200,10 +181,7 @@ app.post('/auth/sign-in', async (c) => {
     setCookie(c, 'session', token, {
       httpOnly: true,
       secure: true,
-      // 'None' porque front (Vercel) e gateway rodam em domínios diferentes —
-      // 'Lax' bloqueia o cookie em requests cross-site mesmo com fetch(credentials:'include').
-      // Exige Secure:true, ok em produção (https) e em localhost (secure context mesmo por http).
-      sameSite: 'None',
+      sameSite: 'Lax',
       maxAge: 60 * 60 * 24 * 7,
     });
     return c.json({ id: user.id, name: user.name, email: user.email, role: 'admin' });
@@ -228,7 +206,7 @@ app.get('/auth/me', async (c) => {
 app.post('/auth/sign-out', (c) => {
   const token = getCookie(c, 'session');
   if (token) sessions.delete(token);
-  setCookie(c, 'session', '', { maxAge: 0, secure: true, sameSite: 'None' });
+  setCookie(c, 'session', '', { maxAge: 0 });
   return c.text('OK');
 });
 
@@ -363,6 +341,6 @@ app.delete('/data/:table/:id', async (c) => {
   }
 });
 
-const port = Number(process.env.PORT) || 3000;
+const port = 3000;
 console.log(`Mock gateway em http://localhost:${port}`);
 serve({ fetch: app.fetch, port });
