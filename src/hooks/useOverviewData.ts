@@ -17,10 +17,8 @@ import type { Transaction } from '@/lib/data/transactions.repo';
 import type { Customer } from '@/lib/data/customers.repo';
 import type { VendorBill } from '@/lib/data/vendor_bills.repo';
 import { isRealizedInvoice } from '@/lib/finance/invoiceStatus';
+import { isOpenBill, isOpenInvoice } from '@/lib/finance/openStatus';
 import type { TimePeriod } from './usePeriodComparison';
-
-const INVOICE_OPEN = ['Open', 'Partial', 'Overdue', 'Partially Paid'];
-const BILL_OPEN = ['Open', 'Pending', 'Overdue', 'Partial', 'Partially Paid'];
 
 export interface RecentTransactionItem {
   id: string;
@@ -40,6 +38,14 @@ export interface OverviewData {
   summary: { maiorReceita: number; maiorDespesa: number; ticketMedio: number; lancamentos: number };
   customers: { total: number; growth: number };
   recentTransactions: RecentTransactionItem[];
+}
+
+export interface RecentFlowItem {
+  id: string;
+  type: 'invoice' | 'expense';
+  date: string;
+  amount: number;
+  label: string;
 }
 
 const EXPENSE_CATEGORY_PT: Record<string, string> = {
@@ -120,14 +126,14 @@ export function useOverviewData(period: TimePeriod) {
       const lancamentos = realizedInWindow.length + expensesInWindow.length;
 
       // Recebíveis em aberto (snapshot atual, não filtrado por período)
-      const openInv = invoices.filter((i) => INVOICE_OPEN.includes(i.status));
+      const openInv = invoices.filter((i) => isOpenInvoice(i.status));
       const openReceivables = {
         count: openInv.length,
         total: openInv.reduce((s, i) => s + Number(i.open_amount || 0), 0),
       };
 
       // Contas a pagar em aberto (snapshot atual)
-      const openBills = vendorBills.filter((b) => BILL_OPEN.includes(b.status));
+      const openBills = vendorBills.filter((b) => isOpenBill(b.status));
       const openPayables = {
         count: openBills.length,
         total: openBills.reduce((s, b) => s + Number(b.open_amount || 0), 0),
@@ -183,6 +189,50 @@ export function useOverviewData(period: TimePeriod) {
         customers: { total: customers.length, growth: customerGrowth },
         recentTransactions,
       };
+    },
+  });
+}
+
+// Resumo do fluxo recente: faturas emitidas (receita) e despesas lançadas,
+// intercaladas pela data mais recente — usado no card "Fluxo recente" do Overview.
+export function useRecentFlow() {
+  return useQuery({
+    queryKey: ['recent-flow'],
+    queryFn: async (): Promise<RecentFlowItem[]> => {
+      const [invoices, transactions, customers] = await Promise.all([
+        fetchTable<Invoice>('invoices'),
+        fetchTable<Transaction>('transactions'),
+        fetchTable<Customer>('customers'),
+      ]);
+      const custMap = new Map(customers.map((c) => [c.id, c.name]));
+      const expenses = transactions.filter((t) => t.type === 'expense');
+
+      const items: RecentFlowItem[] = [
+        ...invoices
+          .slice()
+          .sort((a, b) => b.issue_date.localeCompare(a.issue_date))
+          .slice(0, 5)
+          .map((inv) => ({
+            id: inv.id,
+            type: 'invoice' as const,
+            date: inv.issue_date,
+            amount: Number(inv.amount_total || 0),
+            label: custMap.get(inv.customer_id ?? '') || 'Cliente Desconhecido',
+          })),
+        ...expenses
+          .slice()
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .slice(0, 5)
+          .map((exp) => ({
+            id: exp.id,
+            type: 'expense' as const,
+            date: exp.date,
+            amount: Number(exp.amount || 0),
+            label: exp.vendor || EXPENSE_CATEGORY_PT[exp.category ?? ''] || exp.category || 'Despesa',
+          })),
+      ];
+
+      return items.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
     },
   });
 }

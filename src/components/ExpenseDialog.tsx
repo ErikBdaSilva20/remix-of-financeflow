@@ -12,7 +12,9 @@ import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -20,6 +22,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { db } from '@/lib/data/client';
 import type { Customer } from '@/lib/data/customers.repo';
 import { createTransaction } from '@/lib/data/transactions.repo';
+import { EXPENSE_CATEGORIES } from '@/lib/finance/expenseCategories';
+import { invalidateExpenseQueries } from '@/lib/finance/queryInvalidation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -27,16 +31,11 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
-const CATEGORIES = [
-  { value: 'cogs', label: 'Custo de Produtos/Serviços (CPV)' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'salaries', label: 'Salários e RH' },
-  { value: 'technology', label: 'Tecnologia e Software' },
-  { value: 'operations', label: 'Operações' },
-  { value: 'office', label: 'Escritório' },
-  { value: 'travel', label: 'Viagens' },
-  { value: 'other', label: 'Outros' },
-] as const;
+// Separado em dois grupos de propósito: CPV/COGS entra no cálculo de
+// Margem Bruta em /profitability, o resto vira "despesa operacional" —
+// distinção que soma o valor em Detalhamento de Lucro/Waterfall lá.
+const COGS_CATEGORIES = EXPENSE_CATEGORIES.filter((c) => c.group === 'cogs');
+const OPERATING_CATEGORIES = EXPENSE_CATEGORIES.filter((c) => c.group === 'operating');
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -112,16 +111,7 @@ export function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         customer_id: linkedToCustomer && data.customer_id ? data.customer_id : null,
       }),
     onSuccess: () => {
-      // invalidar todas as queries que dependem de transactions
-      queryClient.invalidateQueries({ queryKey: ['expense-data'] });
-      queryClient.invalidateQueries({ queryKey: ['expense-trends'] });
-      queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
-      queryClient.invalidateQueries({ queryKey: ['vendors'] });
-      queryClient.invalidateQueries({ queryKey: ['profitability-data'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-expenses-periods'] });
-      queryClient.invalidateQueries({ queryKey: ['financial-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['cashflow-data'] });
-      queryClient.invalidateQueries({ queryKey: ['period-comparison'] });
+      invalidateExpenseQueries(queryClient);
       toast.success('Despesa registrada com sucesso');
       setLinkedToCustomer(false);
       form.reset({
@@ -239,13 +229,34 @@ export function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    <SelectLabel>Custo direto (CPV)</SelectLabel>
+                    {COGS_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Despesas operacionais</SelectLabel>
+                    {OPERATING_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
+              {field.value === 'cogs' ? (
+                <p className="text-xs text-muted-foreground">
+                  Conta como Custo do Produto/Serviço (CPV) — reduz a Margem Bruta em
+                  Rentabilidade, separado das despesas operacionais.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Entra como despesa operacional em Rentabilidade — não afeta a Margem Bruta.
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}

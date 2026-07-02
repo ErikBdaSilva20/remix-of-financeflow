@@ -26,6 +26,11 @@ interface ProfitabilityDataTableProps {
 export function ProfitabilityDataTable({ drillDownData, onClose, formatCurrency }: ProfitabilityDataTableProps) {
   if (!drillDownData) return null;
 
+  // Coluna Categoria só existe se PELO MENOS UMA linha tiver categoria — mas
+  // precisa ser renderizada em TODAS as linhas nesse caso (célula vazia se
+  // faltar), senão o número de colunas varia por linha e desalinha a tabela.
+  const hasCategoryColumn = drillDownData.data.some((row) => row.category);
+
   const getTitle = () => {
     if (drillDownData.type === 'waterfall') {
       return `Detalhamento - ${drillDownData.metric}`;
@@ -49,7 +54,7 @@ export function ProfitabilityDataTable({ drillDownData, onClose, formatCurrency 
                 <TableRow>
                   <TableHead>Data</TableHead>
                   <TableHead>Descrição</TableHead>
-                  {drillDownData.data[0]?.category && <TableHead>Categoria</TableHead>}
+                  {hasCategoryColumn && <TableHead>Categoria</TableHead>}
                   <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
               </TableHeader>
@@ -58,9 +63,9 @@ export function ProfitabilityDataTable({ drillDownData, onClose, formatCurrency 
                   <TableRow key={index}>
                     <TableCell>{row.date}</TableCell>
                     <TableCell>{row.description}</TableCell>
-                    {row.category && (
+                    {hasCategoryColumn && (
                       <TableCell>
-                        <Badge variant="secondary">{row.category}</Badge>
+                        {row.category && <Badge variant="secondary">{row.category}</Badge>}
                       </TableCell>
                     )}
                     <TableCell className="text-right font-medium">

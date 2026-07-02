@@ -6,8 +6,8 @@ import type { Transaction } from "@/lib/data/transactions.repo";
 import type { Budget } from "@/lib/data/budgets.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 import type { VendorBill } from "@/lib/data/vendor_bills.repo";
-import { useAccountingSettings } from "./useAccountingSettings";
 import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
+import { EXPENSE_CATEGORY_ORDER, expenseCategoryColor, expenseCategoryLabel } from "@/lib/finance/expenseCategories";
 
 export interface FinancialMetric {
   id: string;
@@ -24,7 +24,6 @@ export interface RevenueSource {
   category: string;
   amount: number;
   percentage: number;
-  growth_rate: number;
 }
 
 export interface ExpenseCategory {
@@ -33,23 +32,14 @@ export interface ExpenseCategory {
   category: string;
   amount: number;
   percentage: number;
-  growth_rate: number;
   budget_amount: number;
-}
-
-export interface RegionalRevenue {
-  id: string;
-  region: string;
-  amount: number;
-  percentage: number;
-  growth_rate: number;
+  color: string;
 }
 
 export interface Client {
   id: string;
   name: string;
   revenue: number;
-  growth_rate: number;
 }
 
 export interface Vendor {
@@ -57,14 +47,6 @@ export interface Vendor {
   name: string;
   category: string;
   amount: number;
-}
-
-export interface KPI {
-  id: string;
-  kpi_name: string;
-  value: number;
-  unit: string;
-  growth_rate: number;
 }
 
 export interface RevenueTrendData {
@@ -91,11 +73,8 @@ function filterByDateRange<T extends { [k: string]: unknown }>(
 }
 
 export function useFinancialMetrics(dateRange?: { from?: Date; to?: Date }) {
-  const { data: settings } = useAccountingSettings();
-  const basis = settings?.basis || 'accrual';
-
   return useQuery({
-    queryKey: ["financial-metrics", basis, dateRange?.from, dateRange?.to],
+    queryKey: ["financial-metrics", dateRange?.from, dateRange?.to],
     queryFn: async () => {
       const today = new Date();
       const dr = dateRange ?? { from: startOfMonth(subMonths(today, 12)), to: endOfMonth(today) };
@@ -128,7 +107,7 @@ export function useFinancialMetrics(dateRange?: { from?: Date; to?: Date }) {
   });
 }
 
-export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _currency?: string) {
+export function useRevenueSources(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["revenue-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
@@ -148,13 +127,12 @@ export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _curre
         category: 'Revenue',
         amount,
         percentage: total > 0 ? (amount / total) * 100 : 0,
-        growth_rate: 0,
       })) as RevenueSource[];
     },
   });
 }
 
-export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _currency?: string) {
+export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["expense-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
@@ -180,16 +158,31 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
         grouped[key].amount += Number(exp.amount || 0);
       });
 
+      // Retorna TODAS as categorias (mesmo as que só têm orçamento e ainda
+      // nenhuma despesa) para que o total de "Orçamento Máximo" bata certo.
+      // Quem exibe donut/distribuição decide separadamente filtrar por amount > 0
+      // (uma categoria sem despesa lançada não deve virar fatia fantasma no gráfico).
+      // A ordem é fixa pelo enum de categorias (não pela ordem de chegada dos dados),
+      // e a cor é atrelada à categoria — assim nem a ordem nem as cores mudam
+      // quando uma nova categoria é cadastrada.
       const total = Object.values(grouped).reduce((s, v) => s + v.amount, 0);
-      return Object.entries(grouped).map(([name, data], i) => ({
-        id: `exp-${i}`,
-        name,
-        category: name,
-        amount: data.amount,
-        percentage: total > 0 ? (data.amount / total) * 100 : 0,
-        growth_rate: 0,
-        budget_amount: data.budget,
-      })) as ExpenseCategory[];
+      const sortedKeys = Object.keys(grouped).sort((a, b) => {
+        const oa = EXPENSE_CATEGORY_ORDER[a] ?? Number.MAX_SAFE_INTEGER;
+        const ob = EXPENSE_CATEGORY_ORDER[b] ?? Number.MAX_SAFE_INTEGER;
+        return oa !== ob ? oa - ob : a.localeCompare(b);
+      });
+      return sortedKeys.map((key, i) => {
+        const data = grouped[key];
+        return {
+          id: `exp-${key}`,
+          name: expenseCategoryLabel(key),
+          category: key,
+          amount: data.amount,
+          percentage: total > 0 ? (data.amount / total) * 100 : 0,
+          budget_amount: data.budget,
+          color: expenseCategoryColor(key, i),
+        };
+      }) as ExpenseCategory[];
     },
   });
 }
@@ -278,10 +271,6 @@ export function useRevenueTrends(dateRange?: { from?: Date; to?: Date }) {
   });
 }
 
-export function useRegionalRevenue() {
-  return useQuery({ queryKey: ["regional-revenue"], queryFn: async (): Promise<RegionalRevenue[]> => [] });
-}
-
 export function useTopClients() {
   return useQuery({
     queryKey: ["top-clients"],
@@ -296,7 +285,7 @@ export function useTopClients() {
         if (inv.customer_id) grouped[inv.customer_id] = (grouped[inv.customer_id] || 0) + Number(inv.amount_total || 0);
       });
       return Object.entries(grouped)
-        .map(([id, revenue]) => ({ id, name: customerMap.get(id) || 'Unknown', revenue, growth_rate: 0 }))
+        .map(([id, revenue]) => ({ id, name: customerMap.get(id) || 'Unknown', revenue }))
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10) as Client[];
     },
@@ -320,19 +309,3 @@ export function useVendors(_dateRange?: { from?: Date; to?: Date }) {
   });
 }
 
-export function useKPIs() {
-  return useQuery({ queryKey: ["kpis"], queryFn: async (): Promise<KPI[]> => [] });
-}
-
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
-export function formatPercentage(percentage: number): string {
-  return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(1)}%`;
-}

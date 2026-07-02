@@ -5,6 +5,8 @@ interface DonutChartData {
   name: string;
   value: number;
   color: string;
+  /** Chave estável para ações (drill-down etc.) quando `name` é um rótulo formatado para exibição. */
+  category?: string;
 }
 
 interface DonutChartProps {
@@ -14,9 +16,13 @@ interface DonutChartProps {
   centerLabel?: string;
   className?: string;
   onSliceClick?: (entry: DonutChartData) => void;
+  formatValue?: (value: number) => string;
 }
 
-export function DonutChart({ data, title, centerValue, centerLabel, className, onSliceClick }: DonutChartProps) {
+export function DonutChart({ data, title, centerValue, centerLabel, className, onSliceClick, formatValue }: DonutChartProps) {
+  const formatEntryValue = (value: unknown) =>
+    typeof value === "number" ? (formatValue ? formatValue(value) : value.toLocaleString()) : value;
+
   /** Custom tooltip */
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -24,9 +30,7 @@ export function DonutChart({ data, title, centerValue, centerLabel, className, o
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg z-50 pointer-events-none">
           <p className="font-medium text-card-foreground">{dataItem.name}</p>
-          <p className="text-sm text-muted-foreground">
-            Value: {typeof dataItem.value === "number" ? dataItem.value.toLocaleString() : dataItem.value}
-          </p>
+          <p className="text-sm text-muted-foreground">Value: {formatEntryValue(dataItem.value)}</p>
         </div>
       );
     }
@@ -44,7 +48,7 @@ export function DonutChart({ data, title, centerValue, centerLabel, className, o
               <span className="text-sm text-foreground truncate">{entry.name}</span>
             </div>
             <span className="text-sm font-medium text-foreground whitespace-nowrap">
-              {typeof entry.value === "number" ? entry.value.toLocaleString() : entry.value}
+              {formatEntryValue(entry.value)}
             </span>
           </div>
         ))}

@@ -6,15 +6,13 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthWrapper } from './components/AuthWrapper';
 import { DashboardLayout } from './components/DashboardLayout';
 import { AuthProvider } from './lib/auth';
-import CashFlow from './pages/CashFlow';
 import Customers from './pages/Customers';
-import Expenses from './pages/Expenses';
 import NotFound from './pages/NotFound';
 import Overview from './pages/Overview';
 import Profitability from './pages/Profitability';
-import Receivables from './pages/Receivables';
+import ReceivablesPayables from './pages/ReceivablesPayables';
 import Reports from './pages/Reports';
-import Revenue from './pages/Revenue';
+import RevenueExpenses from './pages/RevenueExpenses';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,7 +24,6 @@ const queryClient = new QueryClient({
       // Não refazer todas as requests só por focar a aba.
       refetchOnWindowFocus: false,
       // Retry inteligente: NÃO re-tentar erros 4xx do gateway (tabela vazia/
-      // não provisionada, auth) — eram eles que causavam o backoff de ~7s por
       // query quando o tenant não tinha dados. Só re-tenta falhas transitórias.
       retry: (failureCount, error) => {
         const msg = error instanceof Error ? error.message : '';
@@ -49,11 +46,9 @@ const App = () => (
             <Routes>
               <Route element={<DashboardLayout />}>
                 <Route path="/" element={<Overview />} />
-                <Route path="/revenue" element={<Revenue />} />
-                <Route path="/expenses" element={<Expenses />} />
+                <Route path="/revenue" element={<RevenueExpenses />} />
                 <Route path="/profitability" element={<Profitability />} />
-                <Route path="/cash-flow" element={<CashFlow />} />
-                <Route path="/receivables" element={<Receivables />} />
+                <Route path="/receivables" element={<ReceivablesPayables />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/reports" element={<Reports />} />
               </Route>

@@ -2,10 +2,10 @@ import type { Customer } from '@/lib/data/customers.repo';
 import type { Invoice } from '@/lib/data/invoices.repo';
 import type { Transaction } from '@/lib/data/transactions.repo';
 import type { VendorBill } from '@/lib/data/vendor_bills.repo';
+import { AP_OPEN_STATUSES, AR_OPEN_STATUSES } from '@/lib/finance/openStatus';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fetchTable } from './infra/tableCache';
-import { formatCurrency } from './useFinancialData';
 
 export interface ARAgingBucket {
   bucket: string;
@@ -14,7 +14,8 @@ export interface ARAgingBucket {
   percentage: number;
 }
 
-const AR_OPEN = ['Open', 'Partial', 'Overdue', 'Partially Paid'];
+const AR_OPEN: readonly string[] = AR_OPEN_STATUSES;
+const AP_OPEN: readonly string[] = AP_OPEN_STATUSES;
 
 export function useARData(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
@@ -40,17 +41,21 @@ export function useARData(dateRange?: { from?: Date; to?: Date }) {
         '60+': { bucket: '60+ days overdue', count: 0, amount: 0, percentage: 0 },
       };
       const total = filtered.reduce((s, i) => s + Number(i.open_amount || 0), 0);
+      let weightedDaysOutstanding = 0;
       filtered.forEach((inv) => {
         const dueStr = inv.due_date || '';
         const days = dueStr ? Math.ceil((today.getTime() - new Date(dueStr).getTime()) / 86400000) : 0;
+        const amount = Number(inv.open_amount || 0);
         const b = days > 60 ? '60+' : days > 30 ? '30-60' : 'current';
         buckets[b].count++;
-        buckets[b].amount += Number(inv.open_amount || 0);
+        buckets[b].amount += amount;
+        weightedDaysOutstanding += Math.max(days, 0) * amount;
       });
       Object.values(buckets).forEach((b) => {
         b.percentage = total > 0 ? (b.amount / total) * 100 : 0;
       });
-      return { total, buckets: Object.values(buckets), averageCollectionPeriod: 0 };
+      const averageCollectionPeriod = total > 0 ? weightedDaysOutstanding / total : 0;
+      return { total, buckets: Object.values(buckets), averageCollectionPeriod };
     },
   });
 }
@@ -63,9 +68,7 @@ export function useAPData(dateRange?: { from?: Date; to?: Date }) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      let filtered = bills.filter((b) =>
-        ['Open', 'Pending', 'Overdue', 'Partial', 'Partially Paid'].includes(b.status)
-      );
+      let filtered = bills.filter((b) => AP_OPEN.includes(b.status));
       if (dateRange?.from) {
         const f = format(dateRange.from, 'yyyy-MM-dd');
         filtered = filtered.filter((b) => b.due_date >= f);
@@ -84,6 +87,10 @@ export function useAPData(dateRange?: { from?: Date; to?: Date }) {
         })
         .sort((a, b) => a.due_date.localeCompare(b.due_date));
 
+      // Conta já vencida (daysUntilDue < 0) precisa do próprio grupo — antes ela
+      // não caía em nenhum dos 3 buckets abaixo e sumia do card/donut de urgência
+      // mesmo contando no `total`, escondendo justamente o item mais urgente.
+      const overdue = withDays.filter((b) => b.daysUntilDue < 0);
       const urgent = withDays.filter((b) => b.daysUntilDue <= 7 && b.daysUntilDue >= 0);
       const current = withDays.filter((b) => b.daysUntilDue > 7 && b.daysUntilDue <= 30);
       const future = withDays.filter((b) => b.daysUntilDue > 30);
@@ -92,6 +99,12 @@ export function useAPData(dateRange?: { from?: Date; to?: Date }) {
       return {
         total,
         groups: [
+          {
+            name: 'Past due',
+            count: overdue.length,
+            amount: overdue.reduce((s, b) => s + Number(b.open_amount || 0), 0),
+            badge: 'Overdue',
+          },
           {
             name: 'Due within 7 days',
             count: urgent.length,
@@ -256,7 +269,7 @@ export function useAPDetailedData(
     queryFn: async () => {
       const bills = await fetchTable<VendorBill>('vendor_bills');
       const today = new Date();
-      let filtered = bills.filter((b) => ['Open', 'Partial', 'Partially Paid'].includes(b.status));
+      let filtered = bills.filter((b) => AP_OPEN.includes(b.status));
       if (dateRange?.from) {
         const f = format(dateRange.from, 'yyyy-MM-dd');
         filtered = filtered.filter((b) => b.issue_date >= f);
@@ -289,5 +302,3 @@ export function useAPDetailedData(
     },
   });
 }
-
-export { formatCurrency };

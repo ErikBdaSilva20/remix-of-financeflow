@@ -10,11 +10,19 @@ declare global {
 
 function getGatewayUrl(): string {
   const params = new URLSearchParams(window.location.search);
-  return (
-    params.get('gw') ??
-    window.__MASI_GW__ ??
-    import.meta.env.VITE_GATEWAY_URL ??
-    'http://localhost:3000'
+  const url =
+    params.get('gw') ?? window.__MASI_GW__ ?? import.meta.env.VITE_GATEWAY_URL ?? null;
+
+  if (url) return url;
+
+  // Só cai em localhost:3000 em dev (vite dev/preview) — em produção isso
+  // faria o navegador do visitante tentar acessar a própria máquina dele
+  // (loopback), bloqueado pelo browser, sem indicar o erro real: falta
+  // configurar VITE_GATEWAY_URL no ambiente de build.
+  if (import.meta.env.DEV) return 'http://localhost:3000';
+
+  throw new Error(
+    'VITE_GATEWAY_URL não configurada — defina a URL do gateway nas env vars de build (Vercel: Settings → Environment Variables).'
   );
 }
 

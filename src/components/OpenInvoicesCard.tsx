@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -10,6 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { ARInvoice } from '@/components/ARTable';
+import { Link } from 'react-router-dom';
 
 const statusLabelsPt: Record<string, string> = {
   Open: 'Aberto',
@@ -40,8 +41,20 @@ export function OpenInvoicesCard({
 }: OpenInvoicesCardProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Faturas a Receber</CardTitle>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div>
+          <CardTitle className="text-lg">Prévia — Faturas a Receber</CardTitle>
+          <CardDescription>
+            As {invoices.length} mais próximas do vencimento. Cobrança e gestão completa ficam em
+            Contas a Receber.
+          </CardDescription>
+        </div>
+        <Link
+          to="/receivables"
+          className="shrink-0 whitespace-nowrap text-xs font-medium text-primary hover:underline"
+        >
+          Ver todas →
+        </Link>
       </CardHeader>
       <CardContent>
         {invoices.length === 0 ? (

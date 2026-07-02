@@ -1,12 +1,4 @@
-import {
-  Activity,
-  CircleDollarSign,
-  CreditCard,
-  FileText,
-  LayoutDashboard,
-  Receipt,
-  TrendingUp,
-} from '@/components/icons';
+import { CircleDollarSign, FileText, LayoutDashboard } from '@/components/icons';
 import {
   Sidebar,
   SidebarContent,
@@ -18,7 +10,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Users } from 'lucide-react';
+import { HandCoins, Users, Wallet } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 const mainNavItems = [
@@ -28,29 +20,19 @@ const mainNavItems = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Receita',
+    title: 'Receita & Despesas',
     url: '/revenue',
-    icon: TrendingUp,
+    icon: Wallet,
   },
   {
-    title: 'Despesas',
-    url: '/expenses',
-    icon: Receipt,
-  },
-  {
-    title: 'Rentabilidade',
+    title: 'Rentabilidade & Fluxo de Caixa',
     url: '/profitability',
     icon: CircleDollarSign,
   },
   {
-    title: 'Comparativo',
-    url: '/cash-flow',
-    icon: Activity,
-  },
-  {
-    title: 'Recebimentos e Pagamentos',
+    title: 'Contas a Receber & a Pagar',
     url: '/receivables',
-    icon: CreditCard,
+    icon: HandCoins,
   },
   {
     title: 'Clientes',

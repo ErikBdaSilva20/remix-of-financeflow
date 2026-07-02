@@ -65,6 +65,16 @@ create index if not exists idx_customers_owner on customers(owner_id);
 create or replace trigger trg_customers_updated_at
   before update on customers for each row execute function touch_updated_at();
 
+-- Um cliente não pode repetir e-mail nem celular dentro do mesmo tenant.
+-- Normalizado (e-mail em minúsculas, celular só com dígitos) pra pegar
+-- "Fulano@x.com" == "fulano@x.com" e "(11) 99999-9999" == "11999999999".
+create unique index if not exists uq_customers_owner_email
+  on customers (owner_id, lower(email))
+  where email is not null and email <> '';
+create unique index if not exists uq_customers_owner_phone
+  on customers (owner_id, regexp_replace(phone, '\D', '', 'g'))
+  where phone is not null and phone <> '';
+
 -- Faturas / Contas a Receber
 create table if not exists invoices (
   id                     uuid primary key default gen_random_uuid(),
@@ -139,6 +149,15 @@ create index if not exists idx_vendors_owner on vendors(owner_id);
 create or replace trigger trg_vendors_updated_at
   before update on vendors for each row execute function touch_updated_at();
 
+-- Mesma regra dos clientes: um fornecedor não pode repetir e-mail nem
+-- telefone dentro do mesmo tenant (normalizado igual acima).
+create unique index if not exists uq_vendors_owner_email
+  on vendors (owner_id, lower(email))
+  where email is not null and email <> '';
+create unique index if not exists uq_vendors_owner_phone
+  on vendors (owner_id, regexp_replace(phone, '\D', '', 'g'))
+  where phone is not null and phone <> '';
+
 -- Contas a Pagar (notas de fornecedor)
 create table if not exists vendor_bills (
   id                uuid primary key default gen_random_uuid(),
@@ -160,37 +179,6 @@ create index if not exists idx_vendor_bills_owner    on vendor_bills(owner_id);
 create index if not exists idx_vendor_bills_due_date on vendor_bills(due_date);
 create or replace trigger trg_vendor_bills_updated_at
   before update on vendor_bills for each row execute function touch_updated_at();
-
--- Segmentos de filtro (project | department | product | region)
-create table if not exists filter_segments (
-  id            uuid primary key default gen_random_uuid(),
-  owner_id      text not null references "user"(id) on delete cascade,
-  segment_type  text not null,     -- project | department | product | region
-  segment_value text not null,
-  is_active     boolean not null default true,
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now(),
-  constraint uq_filter_segments unique (owner_id, segment_type, segment_value)
-);
-create index if not exists idx_filter_segments_owner on filter_segments(owner_id);
-create or replace trigger trg_filter_segments_updated_at
-  before update on filter_segments for each row execute function touch_updated_at();
-
--- Configurações contábeis do tenant
-create table if not exists accounting_settings (
-  id                 uuid primary key default gen_random_uuid(),
-  owner_id           text not null references "user"(id) on delete cascade,
-  basis              text not null default 'accrual',  -- accrual | cash
-  base_currency      text not null default 'BRL',
-  timezone           text not null default 'UTC',
-  allow_future_dates boolean not null default false,
-  created_at         timestamptz not null default now(),
-  updated_at         timestamptz not null default now(),
-  constraint uq_accounting_settings_owner unique (owner_id)
-);
-create index if not exists idx_accounting_settings_owner on accounting_settings(owner_id);
-create or replace trigger trg_accounting_settings_updated_at
-  before update on accounting_settings for each row execute function touch_updated_at();
 
 -- Budgets (Orçamentos por categoria)
 create table if not exists budgets (
@@ -226,19 +214,3 @@ create table if not exists financial_goals (
 create index if not exists idx_financial_goals_owner on financial_goals(owner_id);
 create or replace trigger trg_financial_goals_updated_at
   before update on financial_goals for each row execute function touch_updated_at();
-
--- Relatórios agendados (config apenas; a ENTREGA automática é cron = extensão Onda 2)
-create table if not exists scheduled_reports (
-  id            uuid primary key default gen_random_uuid(),
-  owner_id      text not null references "user"(id) on delete cascade,
-  report_type   text not null,                       -- profit-loss | balance-sheet | cash-flow | tax-summary
-  report_name   text not null,
-  frequency     text not null default 'monthly',     -- daily | weekly | monthly | quarterly | yearly
-  next_run_date date,
-  is_active     boolean not null default true,
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now()
-);
-create index if not exists idx_scheduled_reports_owner on scheduled_reports(owner_id);
-create or replace trigger trg_scheduled_reports_updated_at
-  before update on scheduled_reports for each row execute function touch_updated_at();
