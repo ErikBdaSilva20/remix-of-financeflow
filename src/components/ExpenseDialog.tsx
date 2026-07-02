@@ -12,7 +12,9 @@ import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -27,8 +29,14 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
-const CATEGORIES = [
+// Separado em dois grupos de propósito: CPV/COGS entra no cálculo de
+// Margem Bruta em /profitability, o resto vira "despesa operacional" —
+// distinção que soma o valor em Detalhamento de Lucro/Waterfall lá.
+const COGS_CATEGORIES = [
   { value: 'cogs', label: 'Custo de Produtos/Serviços (CPV)' },
+] as const;
+
+const OPERATING_CATEGORIES = [
   { value: 'marketing', label: 'Marketing' },
   { value: 'salaries', label: 'Salários e RH' },
   { value: 'technology', label: 'Tecnologia e Software' },
@@ -240,13 +248,34 @@ export function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    <SelectLabel>Custo direto (CPV)</SelectLabel>
+                    {COGS_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Despesas operacionais</SelectLabel>
+                    {OPERATING_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
+              {field.value === 'cogs' ? (
+                <p className="text-xs text-muted-foreground">
+                  Conta como Custo do Produto/Serviço (CPV) — reduz a Margem Bruta em
+                  Rentabilidade, separado das despesas operacionais.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Entra como despesa operacional em Rentabilidade — não afeta a Margem Bruta.
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}

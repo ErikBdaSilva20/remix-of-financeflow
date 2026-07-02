@@ -6,13 +6,11 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthWrapper } from './components/AuthWrapper';
 import { DashboardLayout } from './components/DashboardLayout';
 import { AuthProvider } from './lib/auth';
-import CashFlow from './pages/CashFlow';
 import Customers from './pages/Customers';
 import NotFound from './pages/NotFound';
 import Overview from './pages/Overview';
-import Payables from './pages/Payables';
 import Profitability from './pages/Profitability';
-import Receivables from './pages/Receivables';
+import ReceivablesPayables from './pages/ReceivablesPayables';
 import Reports from './pages/Reports';
 import RevenueExpenses from './pages/RevenueExpenses';
 
@@ -51,9 +49,7 @@ const App = () => (
                 <Route path="/" element={<Overview />} />
                 <Route path="/revenue" element={<RevenueExpenses />} />
                 <Route path="/profitability" element={<Profitability />} />
-                <Route path="/cash-flow" element={<CashFlow />} />
-                <Route path="/receivables" element={<Receivables />} />
-                <Route path="/payables" element={<Payables />} />
+                <Route path="/receivables" element={<ReceivablesPayables />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/reports" element={<Reports />} />
               </Route>

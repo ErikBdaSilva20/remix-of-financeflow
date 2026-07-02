@@ -40,17 +40,21 @@ export function useARData(dateRange?: { from?: Date; to?: Date }) {
         '60+': { bucket: '60+ days overdue', count: 0, amount: 0, percentage: 0 },
       };
       const total = filtered.reduce((s, i) => s + Number(i.open_amount || 0), 0);
+      let weightedDaysOutstanding = 0;
       filtered.forEach((inv) => {
         const dueStr = inv.due_date || '';
         const days = dueStr ? Math.ceil((today.getTime() - new Date(dueStr).getTime()) / 86400000) : 0;
+        const amount = Number(inv.open_amount || 0);
         const b = days > 60 ? '60+' : days > 30 ? '30-60' : 'current';
         buckets[b].count++;
-        buckets[b].amount += Number(inv.open_amount || 0);
+        buckets[b].amount += amount;
+        weightedDaysOutstanding += Math.max(days, 0) * amount;
       });
       Object.values(buckets).forEach((b) => {
         b.percentage = total > 0 ? (b.amount / total) * 100 : 0;
       });
-      return { total, buckets: Object.values(buckets), averageCollectionPeriod: 0 };
+      const averageCollectionPeriod = total > 0 ? weightedDaysOutstanding / total : 0;
+      return { total, buckets: Object.values(buckets), averageCollectionPeriod };
     },
   });
 }

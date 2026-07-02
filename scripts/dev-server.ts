@@ -36,9 +36,6 @@ const TABLES_WITH_OWNER = new Set<string>([
   'transactions',
   'vendors',
   'vendor_bills',
-  'filter_segments',
-  'accounting_settings',
-  'scheduled_reports',
   'budgets',
   'financial_goals',
 ]);

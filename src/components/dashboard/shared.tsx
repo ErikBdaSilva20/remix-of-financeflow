@@ -363,3 +363,50 @@ export function PremiumScope({
     </div>
   );
 }
+
+// Painel colorido usado para separar visualmente os dois lados de uma tela
+// (Receitas/Despesas em /revenue, Contas a Receber/Pagar em /receivables) —
+// 'revenue' = verde (dinheiro entrando), 'expense' = âmbar (dinheiro saindo).
+export function SectionPanel({
+  tone,
+  Icon,
+  title,
+  subtitle,
+  action,
+  children,
+}: {
+  tone: 'revenue' | 'expense';
+  Icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const styles =
+    tone === 'revenue'
+      ? {
+          wrapper: 'border-emerald-200/70 bg-emerald-50/40 dark:border-emerald-500/20 dark:bg-emerald-500/[0.03]',
+          badge: 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-400',
+        }
+      : {
+          wrapper: 'border-amber-200/70 bg-amber-50/40 dark:border-amber-500/20 dark:bg-amber-500/[0.03]',
+          badge: 'bg-amber-600/10 text-amber-700 dark:text-amber-500',
+        };
+  return (
+    <div className={cn('rounded-[2rem] border p-5 sm:p-6', styles.wrapper)}>
+      <div className="mb-5 flex flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className={cn('flex h-10 w-10 items-center justify-center rounded-2xl', styles.badge)}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold leading-tight text-foreground">{title}</h2>
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="space-y-6">{children}</div>
+    </div>
+  );
+}

@@ -6,7 +6,6 @@ import type { Transaction } from "@/lib/data/transactions.repo";
 import type { Budget } from "@/lib/data/budgets.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 import type { VendorBill } from "@/lib/data/vendor_bills.repo";
-import { useAccountingSettings } from "./useAccountingSettings";
 import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
 
 export interface FinancialMetric {
@@ -24,7 +23,6 @@ export interface RevenueSource {
   category: string;
   amount: number;
   percentage: number;
-  growth_rate: number;
 }
 
 export interface ExpenseCategory {
@@ -33,23 +31,13 @@ export interface ExpenseCategory {
   category: string;
   amount: number;
   percentage: number;
-  growth_rate: number;
   budget_amount: number;
-}
-
-export interface RegionalRevenue {
-  id: string;
-  region: string;
-  amount: number;
-  percentage: number;
-  growth_rate: number;
 }
 
 export interface Client {
   id: string;
   name: string;
   revenue: number;
-  growth_rate: number;
 }
 
 export interface Vendor {
@@ -91,11 +79,8 @@ function filterByDateRange<T extends { [k: string]: unknown }>(
 }
 
 export function useFinancialMetrics(dateRange?: { from?: Date; to?: Date }) {
-  const { data: settings } = useAccountingSettings();
-  const basis = settings?.basis || 'accrual';
-
   return useQuery({
-    queryKey: ["financial-metrics", basis, dateRange?.from, dateRange?.to],
+    queryKey: ["financial-metrics", dateRange?.from, dateRange?.to],
     queryFn: async () => {
       const today = new Date();
       const dr = dateRange ?? { from: startOfMonth(subMonths(today, 12)), to: endOfMonth(today) };
@@ -148,7 +133,6 @@ export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _curre
         category: 'Revenue',
         amount,
         percentage: total > 0 ? (amount / total) * 100 : 0,
-        growth_rate: 0,
       })) as RevenueSource[];
     },
   });
@@ -187,7 +171,6 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
         category: name,
         amount: data.amount,
         percentage: total > 0 ? (data.amount / total) * 100 : 0,
-        growth_rate: 0,
         budget_amount: data.budget,
       })) as ExpenseCategory[];
     },
@@ -278,10 +261,6 @@ export function useRevenueTrends(dateRange?: { from?: Date; to?: Date }) {
   });
 }
 
-export function useRegionalRevenue() {
-  return useQuery({ queryKey: ["regional-revenue"], queryFn: async (): Promise<RegionalRevenue[]> => [] });
-}
-
 export function useTopClients() {
   return useQuery({
     queryKey: ["top-clients"],
@@ -296,7 +275,7 @@ export function useTopClients() {
         if (inv.customer_id) grouped[inv.customer_id] = (grouped[inv.customer_id] || 0) + Number(inv.amount_total || 0);
       });
       return Object.entries(grouped)
-        .map(([id, revenue]) => ({ id, name: customerMap.get(id) || 'Unknown', revenue, growth_rate: 0 }))
+        .map(([id, revenue]) => ({ id, name: customerMap.get(id) || 'Unknown', revenue }))
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10) as Client[];
     },

@@ -414,7 +414,7 @@ export default function Overview() {
           value={String(overview?.openPayables.count ?? 0)}
           hint={`${fmt0(overview?.openPayables.total ?? 0)} a pagar`}
           Icon={CreditCard}
-          onClick={() => navigate('/payables')}
+          onClick={() => navigate('/receivables')}
         />
       </section>
 

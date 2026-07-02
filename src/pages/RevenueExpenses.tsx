@@ -12,6 +12,7 @@ import {
   HorizontalBarList,
   MiniStatCard,
   PremiumScope,
+  SectionPanel,
   SummaryList,
   fmt0,
 } from '@/components/dashboard/shared';
@@ -19,7 +20,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 import { useExpenseDrillDown } from '@/hooks/useExpenseDrillDown';
 import { useExpenseCategories, useFinancialMetrics } from '@/hooks/useFinancialData';
 import { useOverviewData } from '@/hooks/useOverviewData';
@@ -67,50 +67,6 @@ const CATEGORY_COLORS = [
   '#65A30D',
   '#DB2777',
 ];
-
-function SectionPanel({
-  tone,
-  Icon,
-  title,
-  subtitle,
-  action,
-  children,
-}: {
-  tone: 'revenue' | 'expense';
-  Icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  subtitle: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  const styles =
-    tone === 'revenue'
-      ? {
-          wrapper: 'border-emerald-200/70 bg-emerald-50/40 dark:border-emerald-500/20 dark:bg-emerald-500/[0.03]',
-          badge: 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-400',
-        }
-      : {
-          wrapper: 'border-amber-200/70 bg-amber-50/40 dark:border-amber-500/20 dark:bg-amber-500/[0.03]',
-          badge: 'bg-amber-600/10 text-amber-700 dark:text-amber-500',
-        };
-  return (
-    <div className={cn('rounded-[2rem] border p-5 sm:p-6', styles.wrapper)}>
-      <div className="mb-5 flex flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className={cn('flex h-10 w-10 items-center justify-center rounded-2xl', styles.badge)}>
-            <Icon className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold leading-tight text-foreground">{title}</h2>
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
-          </div>
-        </div>
-        {action}
-      </div>
-      <div className="space-y-6">{children}</div>
-    </div>
-  );
-}
 
 function InsightsCard({
   insights,
@@ -382,7 +338,7 @@ const RevenueExpenses = () => {
         <div className="lg:col-span-2 space-y-3">
           <SummaryList title="Indicadores" items={flowIndicators} />
           <Link
-            to="/cash-flow"
+            to="/profitability"
             className="inline-flex items-center gap-1 px-1 text-xs font-medium text-primary hover:underline"
           >
             Ver fluxo de caixa detalhado (runway, queima mensal) →
@@ -546,7 +502,7 @@ const RevenueExpenses = () => {
           />
           <SummaryList title="Resumo" items={expenseSummary} />
           <Link
-            to="/payables"
+            to="/receivables"
             className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
           >
             Ver contas a pagar (fornecedores) →

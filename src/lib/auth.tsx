@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { auth, type UserSession } from '@/lib/data/client';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 interface AuthState {
   user: UserSession | null;
@@ -53,31 +53,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadSession]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    setState(s => ({ ...s, isLoading: true, error: null }));
+    setState((s) => ({ ...s, isLoading: true, error: null }));
     try {
       const user = await auth.signIn(email, password);
       setState({ user, isLoading: false, error: null });
     } catch (err) {
       const message = parseGatewayError(err, 'Falha ao entrar. Verifique email e senha.');
-      setState(s => ({ ...s, isLoading: false, error: message }));
+      setState((s) => ({ ...s, isLoading: false, error: message }));
       throw err;
     }
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, name?: string) => {
-    setState(s => ({ ...s, isLoading: true, error: null }));
+    setState((s) => ({ ...s, isLoading: true, error: null }));
     try {
       const user = await auth.signUp(email, password, name);
       setState({ user, isLoading: false, error: null });
     } catch (err) {
       const message = parseGatewayError(err, 'Falha ao criar conta. Tente novamente.');
-      setState(s => ({ ...s, isLoading: false, error: message }));
+      setState((s) => ({ ...s, isLoading: false, error: message }));
       throw err;
     }
   }, []);
 
   const signOut = useCallback(async () => {
-    setState(s => ({ ...s, isLoading: true, error: null }));
+    setState((s) => ({ ...s, isLoading: true, error: null }));
     try {
       await auth.signOut();
     } finally {
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearError = useCallback(() => {
-    setState(s => ({ ...s, error: null }));
+    setState((s) => ({ ...s, error: null }));
   }, []);
 
   return (
