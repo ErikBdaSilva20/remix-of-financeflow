@@ -57,17 +57,6 @@ const chartDescription: Record<TimePeriod, string> = {
   year: 'Evolução ao longo do ano',
 };
 
-const CATEGORY_COLORS = [
-  '#059669',
-  '#0891B2',
-  '#7C3AED',
-  '#DC2626',
-  '#D97706',
-  '#0EA5E9',
-  '#65A30D',
-  '#DB2777',
-];
-
 function InsightsCard({
   insights,
 }: {
@@ -111,6 +100,12 @@ const RevenueExpenses = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<ARInvoice | null>(null);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
+  const [budgetFocusCategory, setBudgetFocusCategory] = useState<string | null>(null);
+
+  const openBudgetManager = (category?: string) => {
+    setBudgetFocusCategory(category ?? null);
+    setBudgetDialogOpen(true);
+  };
 
   // Dados
   const { data: metrics } = useFinancialMetrics();
@@ -167,7 +162,7 @@ const RevenueExpenses = () => {
       Icon: TrendingUp,
     },
     {
-      label: 'A Receber − A Pagar',
+      label: 'A Receber',
       value: fmt0(netCashPosition),
       hint: 'faturas em aberto agora',
       Icon: Wallet,
@@ -207,6 +202,16 @@ const RevenueExpenses = () => {
     { label: 'Ticket médio', value: fmt0(overview?.summary.ticketMedio ?? 0), Icon: Receipt },
   ];
 
+  // Categorias com despesa lançada — usado no donut e na distribuição, pra uma
+  // categoria só-orçamento (sem gasto ainda) não virar fatia/linha fantasma.
+  const categoriesWithSpend = (expenseCategories ?? []).filter((exp) => exp.amount > 0);
+
+  // Categorias com orçamento definido — quebra por categoria dentro do card
+  // "Orçamento Máximo vs Realizado"; cada linha abre o CRUD já focado nela.
+  const budgetedCategories = (expenseCategories ?? [])
+    .filter((exp) => exp.budget_amount > 0)
+    .sort((a, b) => b.budget_amount - a.budget_amount);
+
   const totalExpenses = expenseCategories?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
   const operatingExpenses =
     expenseCategories
@@ -226,26 +231,26 @@ const RevenueExpenses = () => {
     },
   ];
 
-  const donutData =
-    expenseCategories?.map((expense, index) => ({
-      name: expense.name,
-      value: expense.amount,
-      color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-    })) || [];
+  const donutData = categoriesWithSpend.map((expense) => ({
+    name: expense.name,
+    category: expense.category,
+    value: expense.amount,
+    color: expense.color,
+  }));
 
-  const distributionItems = (expenseCategories ?? [])
+  const distributionItems = categoriesWithSpend
     .slice()
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 6)
-    .map((exp, i) => ({
+    .map((exp) => ({
       label: exp.name,
       value: exp.amount,
       percentage: exp.percentage ?? 0,
-      color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+      color: exp.color,
     }));
 
-  const topCategory = expenseCategories?.length
-    ? [...expenseCategories].sort((a, b) => b.amount - a.amount)[0]
+  const topCategory = categoriesWithSpend.length
+    ? [...categoriesWithSpend].sort((a, b) => b.amount - a.amount)[0]
     : null;
   const topCategoryShare =
     topCategory && totalExpenses > 0 ? (topCategory.amount / totalExpenses) * 100 : 0;
@@ -341,7 +346,7 @@ const RevenueExpenses = () => {
             to="/profitability"
             className="inline-flex items-center gap-1 px-1 text-xs font-medium text-primary hover:underline"
           >
-            Ver fluxo de caixa detalhado (runway, queima mensal) →
+            Ver fluxo de caixa detalhado →
           </Link>
         </div>
       </section>
@@ -390,12 +395,6 @@ const RevenueExpenses = () => {
               setPaymentDialogOpen(true);
             }}
           />
-          <Link
-            to="/receivables"
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-          >
-            Ver todas as faturas em aberto →
-          </Link>
         </SectionPanel>
 
         <SectionPanel
@@ -408,15 +407,17 @@ const RevenueExpenses = () => {
               variant="outline"
               size="sm"
               className="rounded-full bg-background"
-              onClick={() => setBudgetDialogOpen(true)}
+              onClick={() => openBudgetManager()}
             >
-              Definir Orçamento
+              Gerenciar Orçamentos
             </Button>
           }
         >
           <Card className="rounded-3xl border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between p-6 pb-3">
-              <CardTitle className="text-base font-semibold">Orçamento vs Realizado</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                Orçamento Máximo vs Realizado
+              </CardTitle>
               <Link
                 to="/profitability"
                 className="text-xs font-medium text-primary hover:underline"
@@ -430,13 +431,12 @@ const RevenueExpenses = () => {
               totalExpenses > 0 ? (
                 (() => {
                   const totalBudget =
-                    expenseCategories?.reduce((sum, exp) => sum + (exp.budget_amount || 0), 0) ||
-                    0;
+                    expenseCategories?.reduce((sum, exp) => sum + (exp.budget_amount || 0), 0) || 0;
                   return (
                     <div className="space-y-4">
                       <div>
                         <div className="mb-2 flex items-center justify-between text-sm">
-                          <span className="font-medium">Orçado</span>
+                          <span className="font-medium">Orçamento Máximo</span>
                           <span>{formatBRL(totalBudget)}</span>
                         </div>
                         <div className="h-2 w-full rounded-full bg-muted">
@@ -471,12 +471,54 @@ const RevenueExpenses = () => {
                           {totalBudget > 0 && (totalExpenses > totalBudget ? '+' : '-')}
                           {formatBRL(Math.abs(totalBudget - totalExpenses))} (
                           {totalBudget > 0
-                            ? (((totalExpenses - totalBudget) / totalBudget) * 100).toFixed(1) +
-                              '%'
+                            ? (((totalExpenses - totalBudget) / totalBudget) * 100).toFixed(1) + '%'
                             : 'N/A'}
                           )
                         </span>
                       </div>
+
+                      {budgetedCategories.length > 0 && (
+                        <div className="space-y-2 border-t border-border pt-4">
+                          <p className="text-xs font-medium text-muted-foreground">Por categoria</p>
+                          {budgetedCategories.map((cat) => {
+                            const over = cat.amount > cat.budget_amount;
+                            const pct =
+                              cat.budget_amount > 0
+                                ? Math.min((cat.amount / cat.budget_amount) * 100, 100)
+                                : 0;
+                            return (
+                              <button
+                                key={cat.category}
+                                type="button"
+                                onClick={() => openBudgetManager(cat.category)}
+                                className="w-full rounded-xl border border-border/60 p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+                              >
+                                <div className="mb-1.5 flex items-center justify-between text-xs">
+                                  <span className="flex items-center gap-1.5 font-medium text-foreground">
+                                    <span
+                                      className="h-2 w-2 rounded-full"
+                                      style={{ backgroundColor: cat.color }}
+                                    />
+                                    {cat.name}
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    {formatBRL(cat.amount)}{' '}
+                                    <span className="text-muted-foreground/60">
+                                      / {formatBRL(cat.budget_amount)}
+                                    </span>
+                                  </span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-muted">
+                                  <div
+                                    className={`h-full rounded-full ${over ? 'bg-destructive' : 'bg-primary'}`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })()
@@ -493,7 +535,8 @@ const RevenueExpenses = () => {
             title="Categorias"
             centerValue={formatBRL(totalExpenses)}
             centerLabel="Despesas Totais"
-            onSliceClick={(entry) => openCategoryDrillDown(entry.name)}
+            onSliceClick={(entry) => openCategoryDrillDown(entry.category ?? entry.name)}
+            formatValue={formatBRL}
           />
           <HorizontalBarList
             title="Distribuição das Despesas"
@@ -529,7 +572,11 @@ const RevenueExpenses = () => {
         invoice={selectedInvoice}
       />
       <ExpenseDialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen} />
-      <BudgetDialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen} />
+      <BudgetDialog
+        open={budgetDialogOpen}
+        onOpenChange={setBudgetDialogOpen}
+        focusCategory={budgetFocusCategory}
+      />
     </PremiumScope>
   );
 };

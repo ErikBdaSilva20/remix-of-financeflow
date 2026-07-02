@@ -7,6 +7,7 @@ import type { Budget } from "@/lib/data/budgets.repo";
 import type { Customer } from "@/lib/data/customers.repo";
 import type { VendorBill } from "@/lib/data/vendor_bills.repo";
 import { isRealizedInvoice } from "@/lib/finance/invoiceStatus";
+import { EXPENSE_CATEGORY_ORDER, expenseCategoryColor, expenseCategoryLabel } from "@/lib/finance/expenseCategories";
 
 export interface FinancialMetric {
   id: string;
@@ -32,6 +33,7 @@ export interface ExpenseCategory {
   amount: number;
   percentage: number;
   budget_amount: number;
+  color: string;
 }
 
 export interface Client {
@@ -164,15 +166,31 @@ export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _cu
         grouped[key].amount += Number(exp.amount || 0);
       });
 
+      // Retorna TODAS as categorias (mesmo as que só têm orçamento e ainda
+      // nenhuma despesa) para que o total de "Orçamento Máximo" bata certo.
+      // Quem exibe donut/distribuição decide separadamente filtrar por amount > 0
+      // (uma categoria sem despesa lançada não deve virar fatia fantasma no gráfico).
+      // A ordem é fixa pelo enum de categorias (não pela ordem de chegada dos dados),
+      // e a cor é atrelada à categoria — assim nem a ordem nem as cores mudam
+      // quando uma nova categoria é cadastrada.
       const total = Object.values(grouped).reduce((s, v) => s + v.amount, 0);
-      return Object.entries(grouped).map(([name, data], i) => ({
-        id: `exp-${i}`,
-        name,
-        category: name,
-        amount: data.amount,
-        percentage: total > 0 ? (data.amount / total) * 100 : 0,
-        budget_amount: data.budget,
-      })) as ExpenseCategory[];
+      const sortedKeys = Object.keys(grouped).sort((a, b) => {
+        const oa = EXPENSE_CATEGORY_ORDER[a] ?? Number.MAX_SAFE_INTEGER;
+        const ob = EXPENSE_CATEGORY_ORDER[b] ?? Number.MAX_SAFE_INTEGER;
+        return oa !== ob ? oa - ob : a.localeCompare(b);
+      });
+      return sortedKeys.map((key, i) => {
+        const data = grouped[key];
+        return {
+          id: `exp-${key}`,
+          name: expenseCategoryLabel(key),
+          category: key,
+          amount: data.amount,
+          percentage: total > 0 ? (data.amount / total) * 100 : 0,
+          budget_amount: data.budget,
+          color: expenseCategoryColor(key, i),
+        };
+      }) as ExpenseCategory[];
     },
   });
 }

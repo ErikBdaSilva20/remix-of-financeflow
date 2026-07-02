@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { ExpenseDrillDownData } from "@/hooks/useExpenseDrillDown";
+import { expenseCategoryLabel } from "@/lib/finance/expenseCategories";
 
 interface ExpenseDrillDownTableProps {
   drillDownData: ExpenseDrillDownData | null;
@@ -22,7 +23,7 @@ export function ExpenseDrillDownTable({
 
   const getTitle = () => {
     if (drillDownData.filterType === "category") {
-      return `Despesas - ${drillDownData.category}`;
+      return `Despesas - ${expenseCategoryLabel(drillDownData.category ?? "")}`;
     }
     return `Despesas - ${drillDownData.periodLabel}`;
   };
@@ -58,7 +59,7 @@ export function ExpenseDrillDownTable({
                     <TableCell>{row.description}</TableCell>
                     {row.category && (
                       <TableCell>
-                        <Badge variant="secondary">{row.category}</Badge>
+                        <Badge variant="secondary">{expenseCategoryLabel(row.category)}</Badge>
                       </TableCell>
                     )}
                     <TableCell className="text-right font-medium">

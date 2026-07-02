@@ -22,6 +22,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { db } from '@/lib/data/client';
 import type { Customer } from '@/lib/data/customers.repo';
 import { createTransaction } from '@/lib/data/transactions.repo';
+import { EXPENSE_CATEGORIES } from '@/lib/finance/expenseCategories';
+import { invalidateExpenseQueries } from '@/lib/finance/queryInvalidation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -32,19 +34,8 @@ import * as z from 'zod';
 // Separado em dois grupos de propósito: CPV/COGS entra no cálculo de
 // Margem Bruta em /profitability, o resto vira "despesa operacional" —
 // distinção que soma o valor em Detalhamento de Lucro/Waterfall lá.
-const COGS_CATEGORIES = [
-  { value: 'cogs', label: 'Custo de Produtos/Serviços (CPV)' },
-] as const;
-
-const OPERATING_CATEGORIES = [
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'salaries', label: 'Salários e RH' },
-  { value: 'technology', label: 'Tecnologia e Software' },
-  { value: 'operations', label: 'Operações' },
-  { value: 'office', label: 'Escritório' },
-  { value: 'travel', label: 'Viagens' },
-  { value: 'other', label: 'Outros' },
-] as const;
+const COGS_CATEGORIES = EXPENSE_CATEGORIES.filter((c) => c.group === 'cogs');
+const OPERATING_CATEGORIES = EXPENSE_CATEGORIES.filter((c) => c.group === 'operating');
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -120,17 +111,7 @@ export function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         customer_id: linkedToCustomer && data.customer_id ? data.customer_id : null,
       }),
     onSuccess: () => {
-      // invalidar todas as queries que dependem de transactions
-      queryClient.invalidateQueries({ queryKey: ['expense-data'] });
-      queryClient.invalidateQueries({ queryKey: ['expense-trends'] });
-      queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
-      queryClient.invalidateQueries({ queryKey: ['vendors'] });
-      queryClient.invalidateQueries({ queryKey: ['profitability-data'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-expenses-periods'] });
-      queryClient.invalidateQueries({ queryKey: ['weekly-breakdown'] });
-      queryClient.invalidateQueries({ queryKey: ['financial-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['cashflow-data'] });
-      queryClient.invalidateQueries({ queryKey: ['period-comparison'] });
+      invalidateExpenseQueries(queryClient);
       toast.success('Despesa registrada com sucesso');
       setLinkedToCustomer(false);
       form.reset({
