@@ -17,10 +17,8 @@ import type { Transaction } from '@/lib/data/transactions.repo';
 import type { Customer } from '@/lib/data/customers.repo';
 import type { VendorBill } from '@/lib/data/vendor_bills.repo';
 import { isRealizedInvoice } from '@/lib/finance/invoiceStatus';
+import { isOpenBill, isOpenInvoice } from '@/lib/finance/openStatus';
 import type { TimePeriod } from './usePeriodComparison';
-
-const INVOICE_OPEN = ['Open', 'Partial', 'Overdue', 'Partially Paid'];
-const BILL_OPEN = ['Open', 'Pending', 'Overdue', 'Partial', 'Partially Paid'];
 
 export interface RecentTransactionItem {
   id: string;
@@ -128,14 +126,14 @@ export function useOverviewData(period: TimePeriod) {
       const lancamentos = realizedInWindow.length + expensesInWindow.length;
 
       // Recebíveis em aberto (snapshot atual, não filtrado por período)
-      const openInv = invoices.filter((i) => INVOICE_OPEN.includes(i.status));
+      const openInv = invoices.filter((i) => isOpenInvoice(i.status));
       const openReceivables = {
         count: openInv.length,
         total: openInv.reduce((s, i) => s + Number(i.open_amount || 0), 0),
       };
 
       // Contas a pagar em aberto (snapshot atual)
-      const openBills = vendorBills.filter((b) => BILL_OPEN.includes(b.status));
+      const openBills = vendorBills.filter((b) => isOpenBill(b.status));
       const openPayables = {
         count: openBills.length,
         total: openBills.reduce((s, b) => s + Number(b.open_amount || 0), 0),

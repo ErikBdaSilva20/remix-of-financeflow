@@ -2,10 +2,10 @@ import type { Customer } from '@/lib/data/customers.repo';
 import type { Invoice } from '@/lib/data/invoices.repo';
 import type { Transaction } from '@/lib/data/transactions.repo';
 import type { VendorBill } from '@/lib/data/vendor_bills.repo';
+import { AP_OPEN_STATUSES, AR_OPEN_STATUSES } from '@/lib/finance/openStatus';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fetchTable } from './infra/tableCache';
-import { formatCurrency } from './useFinancialData';
 
 export interface ARAgingBucket {
   bucket: string;
@@ -14,7 +14,8 @@ export interface ARAgingBucket {
   percentage: number;
 }
 
-const AR_OPEN = ['Open', 'Partial', 'Overdue', 'Partially Paid'];
+const AR_OPEN: readonly string[] = AR_OPEN_STATUSES;
+const AP_OPEN: readonly string[] = AP_OPEN_STATUSES;
 
 export function useARData(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
@@ -67,9 +68,7 @@ export function useAPData(dateRange?: { from?: Date; to?: Date }) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      let filtered = bills.filter((b) =>
-        ['Open', 'Pending', 'Overdue', 'Partial', 'Partially Paid'].includes(b.status)
-      );
+      let filtered = bills.filter((b) => AP_OPEN.includes(b.status));
       if (dateRange?.from) {
         const f = format(dateRange.from, 'yyyy-MM-dd');
         filtered = filtered.filter((b) => b.due_date >= f);
@@ -270,7 +269,7 @@ export function useAPDetailedData(
     queryFn: async () => {
       const bills = await fetchTable<VendorBill>('vendor_bills');
       const today = new Date();
-      let filtered = bills.filter((b) => ['Open', 'Partial', 'Partially Paid'].includes(b.status));
+      let filtered = bills.filter((b) => AP_OPEN.includes(b.status));
       if (dateRange?.from) {
         const f = format(dateRange.from, 'yyyy-MM-dd');
         filtered = filtered.filter((b) => b.issue_date >= f);
@@ -303,5 +302,3 @@ export function useAPDetailedData(
     },
   });
 }
-
-export { formatCurrency };
