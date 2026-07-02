@@ -49,14 +49,6 @@ export interface Vendor {
   amount: number;
 }
 
-export interface KPI {
-  id: string;
-  kpi_name: string;
-  value: number;
-  unit: string;
-  growth_rate: number;
-}
-
 export interface RevenueTrendData {
   period: string;
   dateKey: string;
@@ -115,7 +107,7 @@ export function useFinancialMetrics(dateRange?: { from?: Date; to?: Date }) {
   });
 }
 
-export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _currency?: string) {
+export function useRevenueSources(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["revenue-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
@@ -140,7 +132,7 @@ export function useRevenueSources(dateRange?: { from?: Date; to?: Date }, _curre
   });
 }
 
-export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }, _currency?: string) {
+export function useExpenseCategories(dateRange?: { from?: Date; to?: Date }) {
   return useQuery({
     queryKey: ["expense-data", dateRange?.from, dateRange?.to],
     queryFn: async () => {
@@ -317,19 +309,3 @@ export function useVendors(_dateRange?: { from?: Date; to?: Date }) {
   });
 }
 
-export function useKPIs() {
-  return useQuery({ queryKey: ["kpis"], queryFn: async (): Promise<KPI[]> => [] });
-}
-
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
-export function formatPercentage(percentage: number): string {
-  return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(1)}%`;
-}

@@ -2,7 +2,6 @@ import {
   useExpenseCategories,
   useExpenseTrends,
   useFinancialMetrics,
-  useKPIs,
   useRevenueSources,
   useRevenueTrends,
   useTopClients,
@@ -23,7 +22,6 @@ export function useAppDataPrefetch() {
   useFinancialMetrics(defaultDateRange);
   useRevenueSources(defaultDateRange);
   useExpenseCategories(defaultDateRange);
-  useKPIs();
   useRevenueTrends(defaultDateRange);
   useExpenseTrends(defaultDateRange);
   useTopClients();
