@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { db } from '@/lib/data/client';
 import type { Customer } from '@/lib/data/customers.repo';
+import { invalidateRevenueQueries } from '@/lib/finance/queryInvalidation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
@@ -144,26 +145,7 @@ export function InvoiceForm({ onSuccess, onCancel }: InvoiceFormProps) {
       });
 
       toast.success('Fatura criada com sucesso');
-      // ar/receivables
-      queryClient.invalidateQueries({ queryKey: ['ar-data'] });
-      queryClient.invalidateQueries({ queryKey: ['ar-detailed'] });
-      queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
-      queryClient.invalidateQueries({ queryKey: ['dso'] });
-      // revenue page
-      queryClient.invalidateQueries({ queryKey: ['financial-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-trends'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-data'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-dimensions'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-by-product-trends'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-drill-down'] });
-      queryClient.invalidateQueries({ queryKey: ['period-comparison'] });
-      queryClient.invalidateQueries({ queryKey: ['revenue-expenses-periods'] });
-      queryClient.invalidateQueries({ queryKey: ['weekly-breakdown'] });
-      // dashboard
-      queryClient.invalidateQueries({ queryKey: ['top-clients'] });
-      queryClient.invalidateQueries({ queryKey: ['profitability-data'] });
-      // cash-flow
-      queryClient.invalidateQueries({ queryKey: ['cashflow-data'] });
+      invalidateRevenueQueries(queryClient);
       form.reset();
       onSuccess();
     } catch (error: any) {

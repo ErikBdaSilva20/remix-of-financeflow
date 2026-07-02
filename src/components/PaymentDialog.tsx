@@ -5,6 +5,7 @@ import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { db } from "@/lib/data/client";
 import type { Invoice } from "@/lib/data/invoices.repo";
+import { invalidateRevenueQueries } from "@/lib/finance/queryInvalidation";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -109,15 +110,7 @@ export function PaymentDialog({ open, onOpenChange, invoice }: PaymentDialogProp
       }
 
       toast.success("Recebimento registrado com sucesso!");
-      
-      // Invalidate queries to refresh charts and tables
-      queryClient.invalidateQueries({ queryKey: ["ar-data"] });
-      queryClient.invalidateQueries({ queryKey: ["ar-detailed"] });
-      queryClient.invalidateQueries({ queryKey: ["recent-activity"] });
-      queryClient.invalidateQueries({ queryKey: ["financial-metrics"] });
-      queryClient.invalidateQueries({ queryKey: ["revenue-trends"] });
-      queryClient.invalidateQueries({ queryKey: ["cashflow-data"] });
-      queryClient.invalidateQueries({ queryKey: ["period-comparison"] });
+      invalidateRevenueQueries(queryClient);
 
       form.reset();
       onOpenChange(false);
