@@ -4,11 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Download, TrendingUp, TrendingDown } from "lucide-react";
 import { useFinancialMetrics, useRevenueSources, useExpenseCategories, useTopClients, useVendors } from "@/hooks/useFinancialData";
 import { useARData, useAPData, useDSO } from "@/hooks/useReceivablesData";
-import { EXPENSE_CATEGORIES, expenseCategoryLabel } from "@/lib/finance/expenseCategories";
+import { expenseCategoryLabel, isCogsCategory } from "@/lib/finance/expenseCategories";
+import { formatCurrency as formatBRL } from "@/lib/utils";
 import { toast } from "sonner";
-
-const formatBRL = (amount: number) =>
-  `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 // Escapa um campo pra CSV: aspas duplas ao redor de qualquer valor que
 // contenha vírgula, aspas ou quebra de linha, com "" pra aspas internas.
@@ -19,10 +17,6 @@ const csvField = (value: string | number) => {
 };
 
 const csvRow = (cells: (string | number)[]) => cells.map(csvField).join(',') + '\n';
-
-const CATEGORY_GROUP: Record<string, 'cogs' | 'operating'> = Object.fromEntries(
-  EXPENSE_CATEGORIES.map((c) => [c.value, c.group])
-);
 
 const Reports = () => {
   const { data: metrics, isLoading: metricsLoading } = useFinancialMetrics();
@@ -42,7 +36,7 @@ const Reports = () => {
   const budgetCategories = (expenseCategories ?? []).filter((e) => e.budget_amount > 0);
   const totalExpenses = expenseCategories?.reduce((s: number, e: { amount: number }) => s + e.amount, 0) ?? 0;
   const cogsTotal = (expenseCategories ?? [])
-    .filter((e) => CATEGORY_GROUP[e.category] === 'cogs')
+    .filter((e) => isCogsCategory(e.category))
     .reduce((s, e) => s + e.amount, 0);
   const operatingTotal = totalExpenses - cogsTotal;
   const grossProfit = (revenue?.amount ?? 0) - totalExpenses;

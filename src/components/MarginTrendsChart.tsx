@@ -112,22 +112,6 @@ export function MarginTrendsChart({ className, data, onPointClick }: MarginTrend
                         ),
                     }}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="netMargin"
-                    stroke="#0891B2"
-                    strokeWidth={3}
-                    dot={{ fill: '#0891B2', strokeWidth: 2, r: 4, cursor: 'pointer' }}
-                    name="Margem Líquida"
-                    activeDot={{
-                      r: 6,
-                      stroke: '#0891B2',
-                      strokeWidth: 2,
-                      cursor: 'pointer',
-                      onClick: (_: any, payload: any) =>
-                        onPointClick?.('Net Margin', payload.payload.period, payload.payload.dateKey),
-                    }}
-                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>

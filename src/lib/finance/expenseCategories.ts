@@ -32,6 +32,16 @@ export const EXPENSE_CATEGORY_COLOR: Record<string, string> = Object.fromEntries
   EXPENSE_CATEGORIES.map((c) => [c.value, c.color])
 );
 
+const EXPENSE_CATEGORY_GROUP: Record<string, 'cogs' | 'operating'> = Object.fromEntries(
+  EXPENSE_CATEGORIES.map((c) => [c.value, c.group])
+);
+
+// Fonte única de "essa categoria é CPV?" — usada por Reports (DRE) e
+// Profitability para não classificar a mesma despesa em grupos diferentes.
+export function isCogsCategory(category: string): boolean {
+  return EXPENSE_CATEGORY_GROUP[category] === 'cogs';
+}
+
 const FALLBACK_COLORS = ['#059669', '#0891B2', '#7C3AED', '#DC2626', '#D97706', '#0EA5E9', '#65A30D', '#DB2777'];
 
 export function expenseCategoryLabel(value: string): string {
