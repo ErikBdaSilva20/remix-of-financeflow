@@ -91,14 +91,7 @@ const EXTRA_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
   .map((o) => o.trim())
   .filter(Boolean);
 
-const ALLOWED_ORIGINS = new Set([
-  'http://localhost:5173',
-  'http://localhost:4173',
-  'http://127.0.0.1:5173',
-  'http://localhost:8080',
-  'https://remix-of-financeflow.vercel.app',
-  ...EXTRA_ORIGINS,
-]);
+const ALLOWED_ORIGINS = new Set(['https://remix-of-financeflow.vercel.app', ...EXTRA_ORIGINS]);
 
 app.use('*', async (c, next) => {
   const origin = c.req.header('origin') ?? '';
